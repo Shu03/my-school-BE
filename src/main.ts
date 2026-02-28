@@ -44,9 +44,9 @@ async function bootstrap(): Promise<void> {
     app.useGlobalInterceptors(new ResponseInterceptor());
 
     await app.listen(port);
-    logger.log(`🚀 Application running on http://localhost:${port}/api/v1`);
-    logger.log(`🏥 Health check at http://localhost:${port}/api/v1/health`);
-    logger.log(`🌍 Environment: ${nodeEnv}`);
+    logger.log(`Application running on http://localhost:${port}/api/v1`);
+    logger.log(`Health check at http://localhost:${port}/api/v1/health`);
+    logger.log(`Environment: ${nodeEnv}`);
 }
 
 void bootstrap();
