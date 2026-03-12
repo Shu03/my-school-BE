@@ -1,0 +1,55 @@
+model PermissionPreset {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  teachers TeacherProfile[]
+
+  @@map("permission_presets")
+}
+
+model TeacherProfile {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  employeeCode        String    @unique
+  joiningDate         DateTime?
+  presetId            String?
+  permissionOverrides String[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset           PermissionPreset?        @relation(fields: [presetId], references: [id])
+  classesAsTeacher Class[]                  @relation("ClassTeacher")
+  classAssignments TeacherClassAssignment[]
+
+  @@map("teacher_profiles")
+}
+
+enum TeacherClassRole {
+  CLASS_TEACHER
+  SUBJECT_TEACHER
+}
+
+model TeacherClassAssignment {
+  id        String           @id @default(uuid())
+  teacherId String
+  classId   String
+  subjectId String?
+  role      TeacherClassRole
+  createdAt DateTime         @default(now())
+
+  // Relations
+  teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject Subject?       @relation(fields: [subjectId], references: [id])
+
+  @@unique([teacherId, classId, subjectId])
+  @@index([classId])
+  @@index([teacherId])
+  @@map("teacher_class_assignments")
+}

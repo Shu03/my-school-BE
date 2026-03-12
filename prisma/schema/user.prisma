@@ -1,0 +1,46 @@
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  mobileNumber String   @unique
+  password     String
+  firstName    String
+  lastName     String
+  email        String?  @unique
+  role         Role
+  isActive     Boolean  @default(true)
+  isFirstLogin Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdById  String?
+
+  // Relations
+  createdBy      User?           @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers   User[]          @relation("UserCreatedBy")
+  refreshTokens  RefreshToken[]
+  teacherProfile TeacherProfile?
+  studentProfile StudentProfile?
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  family    String
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
+}

@@ -1,0 +1,54 @@
+model AcademicYear {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  classes     Class[]
+  enrollments StudentEnrollment[]
+
+  @@map("academic_years")
+}
+
+model Class {
+  id             String   @id @default(uuid())
+  name           String
+  gradeLevel     Int
+  academicYearId String
+  classTeacherId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  academicYear       AcademicYear             @relation(fields: [academicYearId], references: [id])
+  classTeacher       TeacherProfile?          @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+  enrollments        StudentEnrollment[]
+  teacherAssignments TeacherClassAssignment[]
+
+  @@unique([name, academicYearId])
+  @@index([academicYearId])
+  @@index([gradeLevel, academicYearId])
+  @@map("classes")
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  code        String
+  gradeLevel  Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  teacherAssignments TeacherClassAssignment[]
+
+  @@unique([name, gradeLevel])
+  @@unique([code, gradeLevel])
+  @@index([gradeLevel])
+  @@map("subjects")
+}
