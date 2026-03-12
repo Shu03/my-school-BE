@@ -1,6 +1,7 @@
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 import { GlobalExceptionFilter } from "@common/filters";
 import { ResponseInterceptor } from "@common/interceptors";
@@ -42,6 +43,20 @@ async function bootstrap(): Promise<void> {
 
     // Global response interceptor
     app.useGlobalInterceptors(new ResponseInterceptor());
+
+    // Swagger — only in non-production
+    if (nodeEnv !== "production") {
+        const config = new DocumentBuilder()
+            .setTitle("My School API")
+            .setDescription("School Management System REST API")
+            .setVersion("1.0")
+            .addBearerAuth()
+            .build();
+
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup("api/docs", app, document);
+        logger.log(`Swagger docs at http://localhost:${port}/api/docs`);
+    }
 
     await app.listen(port);
     logger.log(`Application running on http://localhost:${port}/api/v1`);

@@ -6,6 +6,8 @@ import { appConfig, jwtConfig } from "@config/index";
 import { HealthModule } from "@modules/health";
 import { PrismaModule } from "@modules/prisma";
 
+import { UsersModule } from "./modules/users/users.module";
+
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -14,6 +16,7 @@ import { PrismaModule } from "@modules/prisma";
         }),
         PrismaModule,
         HealthModule,
+        UsersModule,
     ],
 })
 export class AppModule {}

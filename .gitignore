@@ -34,6 +34,12 @@ Thumbs.db
 
 # Prisma
 prisma/migrations/dev/
+prisma/seed.js
+prisma/seed.js.map
+prisma/seed.d.ts
+
+# Claude
+.claude/
 
 # Husky
 .husky/_/

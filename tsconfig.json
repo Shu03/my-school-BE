@@ -24,5 +24,10 @@
             "@config/*": ["config/*"],
             "@modules/*": ["modules/*"]
         }
-    }
+    },
+    "exclude": [
+        "node_modules",
+        "dist",
+        "prisma"
+    ]
 }

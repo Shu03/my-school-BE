@@ -15,4 +15,7 @@ export default defineConfig({
     datasource: {
         url: databaseUrl,
     },
+    migrations: {
+        seed: 'ts-node -r tsconfig-paths/register --compiler-options {"module":"CommonJS"} prisma/seed.ts',
+    },
 });

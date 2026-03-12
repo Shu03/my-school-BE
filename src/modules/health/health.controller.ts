@@ -22,7 +22,6 @@ export class HealthController {
     public check(): Promise<HealthCheckResult> {
         return this.health.check([
             (): Promise<HealthIndicatorResult> =>
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 this.prismaHealth.pingCheck("database", this.prisma),
         ]);
     }
