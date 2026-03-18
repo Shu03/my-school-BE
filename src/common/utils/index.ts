@@ -1,1 +1,1 @@
-export { comparePassword, generateTempPassword, hashPassword } from "./password.util";
+export { comparePassword, generateTempPassword, hashPassword, hashToken } from "./password.util";

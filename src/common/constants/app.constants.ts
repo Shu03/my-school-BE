@@ -17,3 +17,23 @@ export const MAX_ACTIVE_SESSIONS = 3;
 // JWT
 export const JWT_ACCESS_EXPIRES_IN = "15m";
 export const JWT_REFRESH_EXPIRES_IN = "7d";
+
+// Token types
+export const TOKEN_TYPE_ACCESS = "access";
+export const TOKEN_TYPE_FIRST_LOGIN = "first_login";
+export const TOKEN_TYPE_REFRESH = "refresh";
+
+// First login token expiry — always fixed regardless of config
+export const FIRST_LOGIN_TOKEN_EXPIRY = "15m";
+
+// Guard metadata keys
+export const IS_PUBLIC_KEY = "isPublic";
+export const ROLES_KEY = "roles";
+export const PERMISSIONS_KEY = "permissions";
+
+// Permission flags
+export const PERMISSION_LEAVE_APPLY = "LEAVE_APPLY";
+
+// Passport strategy names
+export const JWT_STRATEGY = "jwt";
+export const JWT_FIRST_LOGIN_STRATEGY = "jwt-first-login";

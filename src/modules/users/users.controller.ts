@@ -1,21 +1,29 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+    ApiBearerAuth,
     ApiOperation,
     ApiTags,
     ApiCreatedResponse,
     ApiOkResponse,
     ApiNotFoundResponse,
     ApiBadRequestResponse,
+    ApiBody,
 } from "@nestjs/swagger";
+
+import { Role } from "@prisma/client";
+
+import { CurrentUser, Roles } from "@common/decorators";
+
+import { JwtPayload } from "@modules/auth";
 
 import { CreateAdminDto, CreateStudentDto, CreateTeacherDto } from "./dto/create-user.dto";
 import { ListUsersDto } from "./dto/list-users.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
 
-const TEMP_ADMIN_ID = "534ea2eb-42d4-4be2-ae89-9521446b5d7c";
-
 @ApiTags("Users")
+@ApiBearerAuth()
+@Roles(Role.ADMIN)
 @Controller("users")
 export class UsersController {
     public constructor(private readonly usersService: UsersService) {}
@@ -24,30 +32,36 @@ export class UsersController {
     @ApiOperation({ summary: "Create an Admin account" })
     @ApiCreatedResponse({ description: "Admin created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or mobile number taken" })
+    @ApiBody({ type: CreateAdminDto })
     public async createAdmin(
         @Body() dto: CreateAdminDto,
+        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<UsersService["createAdmin"]>> {
-        return this.usersService.createAdmin(dto, TEMP_ADMIN_ID);
+        return this.usersService.createAdmin(dto, user.sub);
     }
 
     @Post("teacher")
     @ApiOperation({ summary: "Create a Teacher account" })
     @ApiCreatedResponse({ description: "Teacher created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or duplicate data" })
+    @ApiBody({ type: CreateTeacherDto })
     public async createTeacher(
         @Body() dto: CreateTeacherDto,
+        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<UsersService["createTeacher"]>> {
-        return this.usersService.createTeacher(dto, TEMP_ADMIN_ID);
+        return this.usersService.createTeacher(dto, user.sub);
     }
 
     @Post("student")
     @ApiOperation({ summary: "Create a Student account" })
     @ApiCreatedResponse({ description: "Student created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or duplicate data" })
+    @ApiBody({ type: CreateStudentDto })
     public async createStudent(
         @Body() dto: CreateStudentDto,
+        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<UsersService["createStudent"]>> {
-        return this.usersService.createStudent(dto, TEMP_ADMIN_ID);
+        return this.usersService.createStudent(dto, user.sub);
     }
 
     @Get()

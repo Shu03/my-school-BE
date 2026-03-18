@@ -18,3 +18,7 @@ export const hashPassword = async (plain: string): Promise<string> => {
 export const comparePassword = async (plain: string, hash: string): Promise<boolean> => {
     return bcrypt.compare(plain, hash);
 };
+
+export const hashToken = (token: string): string => {
+    return crypto.createHash("sha256").update(token).digest("hex");
+};
