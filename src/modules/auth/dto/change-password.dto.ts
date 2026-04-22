@@ -14,5 +14,5 @@ export class ChangePasswordDto {
         message:
             "newPassword must contain at least one uppercase letter, one lowercase letter, one number and one special character",
     })
-    public newPassword: string;
+    public newPassword!: string;
 }

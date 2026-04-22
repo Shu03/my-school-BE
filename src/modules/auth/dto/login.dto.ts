@@ -5,11 +5,11 @@ export class LoginDto {
     @Transform(({ value }: { value: string }) => value?.trim())
     @IsMobilePhone("en-IN")
     @IsNotEmpty()
-    public mobileNumber: string;
+    public mobileNumber!: string;
 
     @IsString()
     @IsNotEmpty()
     @MinLength(6)
     @MaxLength(72)
-    public password: string;
+    public password!: string;
 }

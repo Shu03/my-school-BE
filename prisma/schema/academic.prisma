@@ -10,8 +10,26 @@ model AcademicYear {
   // Relations
   classes     Class[]
   enrollments StudentEnrollment[]
+  terms       Term[]
 
   @@map("academic_years")
+}
+
+model Term {
+  id             String   @id @default(uuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  academicYearId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([name, academicYearId])
+  @@index([academicYearId])
+  @@map("terms")
 }
 
 model Class {

@@ -17,20 +17,20 @@ class BaseCreateUserDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(50)
-    public firstName: string;
+    public firstName!: string;
 
     @ApiProperty({ example: "Doe" })
     @Transform(({ value }: { value: string }) => value?.trim())
     @IsString()
     @IsNotEmpty()
     @MaxLength(50)
-    public lastName: string;
+    public lastName!: string;
 
     @ApiProperty({ example: "9876543210" })
     @Transform(({ value }: { value: string }) => value?.trim())
     @IsMobilePhone("en-IN")
     @IsNotEmpty()
-    public mobileNumber: string;
+    public mobileNumber!: string;
 
     @ApiPropertyOptional({ example: "john@example.com" })
     @Transform(({ value }: { value: string }) => value?.trim())
@@ -48,7 +48,7 @@ export class CreateTeacherDto extends BaseCreateUserDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(20)
-    public employeeCode: string;
+    public employeeCode!: string;
 
     @ApiPropertyOptional({ example: "2024-01-15" })
     @IsISO8601({ strict: true })
@@ -62,7 +62,7 @@ export class CreateStudentDto extends BaseCreateUserDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(20)
-    public admissionNumber: string;
+    public admissionNumber!: string;
 
     @ApiPropertyOptional({ example: "2010-05-15" })
     @IsISO8601({ strict: true })

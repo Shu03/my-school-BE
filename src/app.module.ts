@@ -15,6 +15,7 @@ import { appConfig, jwtConfig } from "@config/index";
 import { HealthModule } from "@modules/health";
 import { PrismaModule } from "@modules/prisma";
 
+import { AcademicYearsModule } from "./modules/academic-years/academic-years.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UsersModule } from "./modules/users/users.module";
 
@@ -28,6 +29,7 @@ import { UsersModule } from "./modules/users/users.module";
         HealthModule,
         UsersModule,
         AuthModule,
+        AcademicYearsModule,
     ],
     providers: [
         JwtStrategy,

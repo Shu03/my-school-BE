@@ -31,9 +31,10 @@ export const IS_PUBLIC_KEY = "isPublic";
 export const ROLES_KEY = "roles";
 export const PERMISSIONS_KEY = "permissions";
 
-// Permission flags
-export const PERMISSION_LEAVE_APPLY = "LEAVE_APPLY";
-
 // Passport strategy names
 export const JWT_STRATEGY = "jwt";
 export const JWT_FIRST_LOGIN_STRATEGY = "jwt-first-login";
+
+// Permission flags
+export const PERMISSION_LEAVE_APPLY = "LEAVE_APPLY";
+export const PERMISSION_ACADEMIC_YEAR_MANAGE = "ACADEMIC_YEAR_MANAGE";

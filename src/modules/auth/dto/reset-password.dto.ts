@@ -4,5 +4,5 @@ export class ResetPasswordDto {
     @IsUUID()
     @IsNotEmpty()
     @IsString()
-    public userId: string;
+    public userId!: string;
 }
