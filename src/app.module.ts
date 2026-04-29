@@ -17,6 +17,7 @@ import { PrismaModule } from "@modules/prisma";
 
 import { AcademicYearsModule } from "./modules/academic-years/academic-years.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { ClassesModule } from "./modules/classes/classes.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersModule } from "./modules/users/users.module";
         UsersModule,
         AuthModule,
         AcademicYearsModule,
+        ClassesModule,
     ],
     providers: [
         JwtStrategy,
