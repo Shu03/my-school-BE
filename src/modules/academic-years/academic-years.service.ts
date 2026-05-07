@@ -184,6 +184,28 @@ export class AcademicYearsService {
         });
     }
 
+    private async assertNoTermOverlap(
+        academicYearId: string,
+        startDate: Date,
+        endDate: Date,
+        excludeTermId?: string,
+    ): Promise<void> {
+        const overlapping = await this.prisma.term.findFirst({
+            where: {
+                academicYearId,
+                ...(excludeTermId && { id: { not: excludeTermId } }),
+                startDate: { lt: endDate },
+                endDate: { gt: startDate },
+            },
+        });
+
+        if (overlapping) {
+            throw new BadRequestException(
+                `Term dates overlap with existing term "${overlapping.name}"`,
+            );
+        }
+    }
+
     public async createTerm(academicYearId: string, dto: CreateTermDto): Promise<TermBasic> {
         await this.assertYearExists(academicYearId);
         this.assertValidDateRange(dto.startDate, dto.endDate);
@@ -199,6 +221,13 @@ export class AcademicYearsService {
         ) {
             throw new BadRequestException("Term dates must be within the academic year bounds");
         }
+
+        // Check for overlapping terms
+        await this.assertNoTermOverlap(
+            academicYearId,
+            new Date(dto.startDate),
+            new Date(dto.endDate),
+        );
 
         return this.prisma.term.create({
             data: {
@@ -254,6 +283,14 @@ export class AcademicYearsService {
             ) {
                 throw new BadRequestException("Term dates must be within the academic year bounds");
             }
+
+            // Check for overlapping terms (excluding self)
+            await this.assertNoTermOverlap(
+                academicYearId,
+                new Date(startDate),
+                new Date(endDate),
+                termId,
+            );
         }
 
         return this.prisma.term.update({

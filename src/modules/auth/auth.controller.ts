@@ -8,6 +8,7 @@ import {
     ApiForbiddenResponse,
     ApiBadRequestResponse,
 } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import { Role } from "@prisma/client";
 
@@ -28,6 +29,7 @@ export class AuthController {
 
     @Post("login")
     @Public()
+    @Throttle({ default: { ttl: 60_000, limit: 5 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: "Login with mobile number and password" })
     @ApiOkResponse({ description: "Login successful" })
@@ -39,6 +41,7 @@ export class AuthController {
 
     @Post("refresh")
     @Public()
+    @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: "Rotate refresh token" })
     @ApiOkResponse({ description: "Tokens rotated successfully" })

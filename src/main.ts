@@ -1,7 +1,10 @@
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+
+import helmet from "helmet";
 
 import { GlobalExceptionFilter } from "@common/filters";
 import { ResponseInterceptor } from "@common/interceptors";
@@ -10,11 +13,17 @@ import { AppModule } from "./app.module";
 
 async function bootstrap(): Promise<void> {
     const logger = new Logger("Bootstrap");
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     const configService = app.get(ConfigService);
     const port = configService.get<number>("app.port") ?? 3000;
     const nodeEnv = configService.get<string>("app.nodeEnv") ?? "development";
+
+    // Trust proxy — required when behind reverse proxy (nginx/ALB)
+    app.set("trust proxy", 1);
+
+    // Security headers
+    app.use(helmet());
 
     // Global prefix
     app.setGlobalPrefix("api/v1");

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 
 import {
     JwtAuthGuard,
@@ -26,6 +27,9 @@ import { UsersModule } from "./modules/users/users.module";
             isGlobal: true,
             load: [appConfig, jwtConfig],
         }),
+        ThrottlerModule.forRoot({
+            throttlers: [{ ttl: 60_000, limit: 10 }],
+        }),
         PrismaModule,
         HealthModule,
         UsersModule,
@@ -47,6 +51,10 @@ import { UsersModule } from "./modules/users/users.module";
         {
             provide: APP_GUARD,
             useClass: PermissionsGuard,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
         },
     ],
 })

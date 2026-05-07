@@ -5,10 +5,12 @@ import * as bcrypt from "bcrypt";
 import { SALT_ROUNDS, TEMP_PASSWORD_CHARS, TEMP_PASSWORD_LENGTH } from "@common/constants";
 
 export const generateTempPassword = (): string => {
-    const bytes = crypto.randomBytes(TEMP_PASSWORD_LENGTH);
-    return Array.from(bytes)
-        .map((byte) => TEMP_PASSWORD_CHARS[byte % TEMP_PASSWORD_CHARS.length])
-        .join("");
+    const chars: string[] = [];
+    while (chars.length < TEMP_PASSWORD_LENGTH) {
+        const value = crypto.randomInt(TEMP_PASSWORD_CHARS.length);
+        chars.push(TEMP_PASSWORD_CHARS[value]);
+    }
+    return chars.join("");
 };
 
 export const hashPassword = async (plain: string): Promise<string> => {
