@@ -21,6 +21,35 @@ import {
 export class UsersService {
     public constructor(private readonly prisma: PrismaService) {}
 
+    private async assertMobileNotTaken(mobileNumber: string): Promise<void> {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { mobileNumber },
+        });
+        if (existingUser) {
+            throw new BadRequestException(`Mobile number is already registered`);
+        }
+    }
+
+    private async assertEmployeeCodeNotTaken(employeeCode: string): Promise<void> {
+        const existing = await this.prisma.teacherProfile.findUnique({
+            where: { employeeCode },
+        });
+
+        if (existing) {
+            throw new BadRequestException(`Employee code is already taken`);
+        }
+    }
+
+    private async assertAdmissionNumberNotTaken(admissionNumber: string): Promise<void> {
+        const existing = await this.prisma.studentProfile.findUnique({
+            where: { admissionNumber },
+        });
+
+        if (existing) {
+            throw new BadRequestException(`Admission number is already taken`);
+        }
+    }
+
     private async assertUserExists(id: string): Promise<void> {
         const existing = await this.prisma.user.findUnique({
             where: { id },
@@ -36,129 +65,92 @@ export class UsersService {
         dto: CreateAdminDto,
         createdById: string,
     ): Promise<CreateUserResult<UserWithoutPassword>> {
+        await this.assertMobileNotTaken(dto.mobileNumber);
+
         const tempPassword = generateTempPassword();
         const hashedPassword = await hashPassword(tempPassword);
 
-        try {
-            const user = await this.prisma.user.create({
-                data: {
-                    firstName: dto.firstName,
-                    lastName: dto.lastName,
-                    mobileNumber: dto.mobileNumber,
-                    email: dto.email,
-                    role: Role.ADMIN,
-                    password: hashedPassword,
-                    createdById,
-                },
-                omit: { password: true },
-            });
+        const user = await this.prisma.user.create({
+            data: {
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+                mobileNumber: dto.mobileNumber,
+                email: dto.email,
+                role: Role.ADMIN,
+                password: hashedPassword,
+                createdById,
+            },
+            omit: { password: true },
+        });
 
-            return { user, tempPassword };
-        } catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                const fields = (error.meta as { target?: string[] })?.target;
-                if (fields?.includes("mobileNumber")) {
-                    throw new BadRequestException("Mobile number is already registered");
-                }
-                if (fields?.includes("email")) {
-                    throw new BadRequestException("Email is already registered");
-                }
-            }
-            throw error;
-        }
+        return { user, tempPassword };
     }
 
     public async createTeacher(
         dto: CreateTeacherDto,
         createdById: string,
     ): Promise<CreateUserResult<UserWithTeacherProfile>> {
+        await this.assertMobileNotTaken(dto.mobileNumber);
+        await this.assertEmployeeCodeNotTaken(dto.employeeCode);
+
         const tempPassword = generateTempPassword();
         const hashedPassword = await hashPassword(tempPassword);
 
-        try {
-            const user = await this.prisma.user.create({
-                data: {
-                    firstName: dto.firstName,
-                    lastName: dto.lastName,
-                    mobileNumber: dto.mobileNumber,
-                    email: dto.email,
-                    role: Role.TEACHER,
-                    password: hashedPassword,
-                    createdById,
-                    teacherProfile: {
-                        create: {
-                            employeeCode: dto.employeeCode,
-                            joiningDate: dto.joiningDate ? new Date(dto.joiningDate) : null,
-                            permissionOverrides: [],
-                        },
+        const user = await this.prisma.user.create({
+            data: {
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+                mobileNumber: dto.mobileNumber,
+                email: dto.email,
+                role: Role.TEACHER,
+                password: hashedPassword,
+                createdById,
+                teacherProfile: {
+                    create: {
+                        employeeCode: dto.employeeCode,
+                        joiningDate: dto.joiningDate ? new Date(dto.joiningDate) : null,
+                        permissionOverrides: [],
                     },
                 },
-                omit: { password: true },
-                include: { teacherProfile: true },
-            });
+            },
+            omit: { password: true },
+            include: { teacherProfile: true },
+        });
 
-            return { user, tempPassword };
-        } catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                const fields = (error.meta as { target?: string[] })?.target;
-                if (fields?.includes("mobileNumber")) {
-                    throw new BadRequestException("Mobile number is already registered");
-                }
-                if (fields?.includes("email")) {
-                    throw new BadRequestException("Email is already registered");
-                }
-                if (fields?.includes("employeeCode")) {
-                    throw new BadRequestException("Employee code is already taken");
-                }
-            }
-            throw error;
-        }
+        return { user, tempPassword };
     }
 
     public async createStudent(
         dto: CreateStudentDto,
         createdById: string,
     ): Promise<CreateUserResult<UserWithStudentProfile>> {
+        await this.assertMobileNotTaken(dto.mobileNumber);
+        await this.assertAdmissionNumberNotTaken(dto.admissionNumber);
+
         const tempPassword = generateTempPassword();
         const hashedPassword = await hashPassword(tempPassword);
 
-        try {
-            const user = await this.prisma.user.create({
-                data: {
-                    firstName: dto.firstName,
-                    lastName: dto.lastName,
-                    mobileNumber: dto.mobileNumber,
-                    email: dto.email,
-                    role: Role.STUDENT,
-                    password: hashedPassword,
-                    createdById,
-                    studentProfile: {
-                        create: {
-                            admissionNumber: dto.admissionNumber,
-                            dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
-                        },
+        const user = await this.prisma.user.create({
+            data: {
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+                mobileNumber: dto.mobileNumber,
+                email: dto.email,
+                role: Role.STUDENT,
+                password: hashedPassword,
+                createdById,
+                studentProfile: {
+                    create: {
+                        admissionNumber: dto.admissionNumber,
+                        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
                     },
                 },
-                omit: { password: true },
-                include: { studentProfile: true },
-            });
+            },
+            omit: { password: true },
+            include: { studentProfile: true },
+        });
 
-            return { user, tempPassword };
-        } catch (error) {
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                const fields = (error.meta as { target?: string[] })?.target;
-                if (fields?.includes("mobileNumber")) {
-                    throw new BadRequestException("Mobile number is already registered");
-                }
-                if (fields?.includes("email")) {
-                    throw new BadRequestException("Email is already registered");
-                }
-                if (fields?.includes("admissionNumber")) {
-                    throw new BadRequestException("Admission number is already taken");
-                }
-            }
-            throw error;
-        }
+        return { user, tempPassword };
     }
 
     public async findAll(dto: ListUsersDto): Promise<{
