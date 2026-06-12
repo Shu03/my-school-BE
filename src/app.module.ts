@@ -20,6 +20,7 @@ import { AcademicYearsModule } from "./modules/academic-years/academic-years.mod
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClassesModule } from "./modules/classes/classes.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
+import { TeachersModule } from "./modules/teachers/teachers.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Module({
@@ -38,6 +39,7 @@ import { UsersModule } from "./modules/users/users.module";
         AcademicYearsModule,
         ClassesModule,
         SubjectsModule,
+        TeachersModule,
     ],
     providers: [
         JwtStrategy,
