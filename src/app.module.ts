@@ -19,6 +19,7 @@ import { PrismaModule } from "@modules/prisma";
 import { AcademicYearsModule } from "./modules/academic-years/academic-years.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClassesModule } from "./modules/classes/classes.module";
+import { StudentsModule } from "./modules/students/students.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
 import { TeachersModule } from "./modules/teachers/teachers.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -40,6 +41,7 @@ import { UsersModule } from "./modules/users/users.module";
         ClassesModule,
         SubjectsModule,
         TeachersModule,
+        StudentsModule,
     ],
     providers: [
         JwtStrategy,

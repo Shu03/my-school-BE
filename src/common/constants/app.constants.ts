@@ -49,6 +49,9 @@ export const PERMISSION_HOMEWORK_MANAGE = "HOMEWORK_MANAGE";
 export const PERMISSION_ANNOUNCEMENTS_MANAGE = "ANNOUNCEMENTS_MANAGE";
 export const PERMISSION_REPORTS_VIEW = "REPORTS_VIEW";
 
+// Students
+export const ROLL_NUMBER_PAD_WIDTH = 2;
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,
