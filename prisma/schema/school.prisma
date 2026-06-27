@@ -1,0 +1,8 @@
+model SchoolSettings {
+  id            String   @id @default(uuid())
+  weeklyOffDays Int[] // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("school_settings")
+}

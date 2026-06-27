@@ -17,8 +17,10 @@ import { HealthModule } from "@modules/health";
 import { PrismaModule } from "@modules/prisma";
 
 import { AcademicYearsModule } from "./modules/academic-years/academic-years.module";
+import { AttendanceModule } from "./modules/attendance/attendance.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClassesModule } from "./modules/classes/classes.module";
+import { SchoolModule } from "./modules/school/school.module";
 import { StudentsModule } from "./modules/students/students.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
 import { TeachersModule } from "./modules/teachers/teachers.module";
@@ -42,6 +44,8 @@ import { UsersModule } from "./modules/users/users.module";
         SubjectsModule,
         TeachersModule,
         StudentsModule,
+        SchoolModule,
+        AttendanceModule,
     ],
     providers: [
         JwtStrategy,

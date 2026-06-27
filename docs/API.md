@@ -186,16 +186,20 @@ Reactivate a user account (sets `isActive = true`).
 
 ## Auth
 
-All auth endpoints are prefixed with `/auth`. _(In progress — endpoints not yet implemented.)_
+All auth endpoints are prefixed with `/auth`.
 
-### Planned Endpoints
+### Endpoints
 
 | Method | Path                    | Description                                |
 | ------ | ----------------------- | ------------------------------------------ |
 | POST   | `/auth/login`           | Login with mobile + password               |
 | POST   | `/auth/refresh`         | Refresh access token                       |
+| POST   | `/auth/logout`          | Logout (revoke refresh token)              |
 | POST   | `/auth/change-password` | Change password (first-login or voluntary) |
 | POST   | `/auth/reset-password`  | Admin resets a user's password             |
+| GET    | `/auth/me`              | Get current authenticated user info        |
+
+**See:** [FRONTEND_AUTH_GUIDE.md](FRONTEND_AUTH_GUIDE.md) for detailed endpoint documentation.
 
 ### Auth DTOs
 

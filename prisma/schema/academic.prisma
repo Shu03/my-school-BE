@@ -10,6 +10,7 @@ model AcademicYear {
   // Relations
   classes     Class[]
   enrollments StudentEnrollment[]
+  holidays    Holiday[]
   terms       Term[]
 
   @@map("academic_years")
@@ -44,6 +45,7 @@ model Class {
   // Relations
   academicYear       AcademicYear             @relation(fields: [academicYearId], references: [id])
   classTeacher       TeacherProfile?          @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+  attendances        Attendance[]
   enrollments        StudentEnrollment[]
   teacherAssignments TeacherClassAssignment[]
 
@@ -69,4 +71,19 @@ model Subject {
   @@unique([code, gradeLevel])
   @@index([gradeLevel])
   @@map("subjects")
+}
+
+model Holiday {
+  id             String   @id @default(uuid())
+  name           String
+  date           DateTime @db.Date
+  academicYearId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([date, academicYearId])
+  @@index([academicYearId])
+  @@map("holidays")
 }

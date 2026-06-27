@@ -52,6 +52,24 @@ export const PERMISSION_REPORTS_VIEW = "REPORTS_VIEW";
 // Students
 export const ROLL_NUMBER_PAD_WIDTH = 2;
 
+// School settings
+export const WEEKLY_OFF_DAYS_DEFAULT = [0]; // 0 = Sunday
+
+// Timezone used for date-only comparisons (e.g. attendance "today" check)
+export const SCHOOL_TIMEZONE = "Asia/Kolkata";
+
+// School / Holiday error messages
+export const ERROR_HOLIDAY_ALREADY_EXISTS =
+    "A holiday already exists on this date for this academic year";
+export const ERROR_NO_FIELDS_TO_UPDATE = "No fields provided to update";
+
+// Attendance error messages
+export const ERROR_ATTENDANCE_DATE_NOT_TODAY = "Attendance can only be marked for today";
+export const ERROR_ATTENDANCE_NOT_SCHOOL_DAY = "The selected date is not a school day";
+export const ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS = "You are not assigned to this class";
+export const ERROR_STUDENT_NOT_ENROLLED = "One or more students are not enrolled in this class";
+export const ERROR_ATTENDANCE_FORBIDDEN_SCOPE = "You are not allowed to view this attendance";
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,

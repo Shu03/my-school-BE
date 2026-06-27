@@ -1,0 +1,26 @@
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model Attendance {
+  id             String           @id @default(uuid())
+  studentId      String
+  classId        String
+  academicYearId String
+  date           DateTime         @db.Date
+  status         AttendanceStatus
+  markedById     String?
+  periodId       String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  student  StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class    Class           @relation(fields: [classId], references: [id])
+  markedBy TeacherProfile? @relation(fields: [markedById], references: [id])
+
+  @@unique([studentId, date, periodId])
+  @@index([classId, date])
+  @@index([studentId, academicYearId])
+  @@map("attendance")
+}
