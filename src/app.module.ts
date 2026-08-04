@@ -20,6 +20,7 @@ import { AcademicYearsModule } from "./modules/academic-years/academic-years.mod
 import { AttendanceModule } from "./modules/attendance/attendance.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClassesModule } from "./modules/classes/classes.module";
+import { ExamsModule } from "./modules/exams/exams.module";
 import { SchoolModule } from "./modules/school/school.module";
 import { StudentsModule } from "./modules/students/students.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
@@ -46,6 +47,7 @@ import { UsersModule } from "./modules/users/users.module";
         StudentsModule,
         SchoolModule,
         AttendanceModule,
+        ExamsModule,
     ],
     providers: [
         JwtStrategy,

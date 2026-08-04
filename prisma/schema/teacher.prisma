@@ -27,6 +27,8 @@ model TeacherProfile {
   attendances      Attendance[]
   classesAsTeacher Class[]                  @relation("ClassTeacher")
   classAssignments TeacherClassAssignment[]
+  examsCreated     Exam[]                   @relation("ExamCreatedBy")
+  gradesEntered    Grade[]                  @relation("GradeGradedBy")
 
   @@map("teacher_profiles")
 }

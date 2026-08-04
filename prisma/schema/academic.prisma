@@ -10,6 +10,7 @@ model AcademicYear {
   // Relations
   classes     Class[]
   enrollments StudentEnrollment[]
+  exams       Exam[]
   holidays    Holiday[]
   terms       Term[]
 
@@ -27,6 +28,7 @@ model Term {
 
   // Relations
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  exams        Exam[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -47,6 +49,7 @@ model Class {
   classTeacher       TeacherProfile?          @relation("ClassTeacher", fields: [classTeacherId], references: [id])
   attendances        Attendance[]
   enrollments        StudentEnrollment[]
+  exams              Exam[]
   teacherAssignments TeacherClassAssignment[]
 
   @@unique([name, academicYearId])
@@ -65,6 +68,7 @@ model Subject {
   updatedAt   DateTime @updatedAt
 
   // Relations
+  exams              Exam[]
   teacherAssignments TeacherClassAssignment[]
 
   @@unique([name, gradeLevel])

@@ -12,6 +12,7 @@ model StudentProfile {
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   attendances Attendance[]
   enrollments StudentEnrollment[]
+  grades      Grade[]
 
   @@map("student_profiles")
 }

@@ -70,6 +70,21 @@ export const ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS = "You are not assigned to this
 export const ERROR_STUDENT_NOT_ENROLLED = "One or more students are not enrolled in this class";
 export const ERROR_ATTENDANCE_FORBIDDEN_SCOPE = "You are not allowed to view this attendance";
 
+// Exam error messages
+export const ERROR_EXAM_NOT_FOUND = "Exam not found";
+export const ERROR_EXAM_FINALIZED = "Exam is finalized and cannot be modified";
+export const ERROR_EXAM_DISCARDED = "Exam has been discarded and cannot be modified";
+export const ERROR_EXAM_NOT_CREATOR = "You are not allowed to modify this exam";
+export const ERROR_EXAM_TEACHER_PROFILE_NOT_FOUND = "Teacher profile not found for this account";
+export const ERROR_EXAM_NOT_CLASS_TEACHER = "You are not the class teacher of this class";
+export const ERROR_EXAM_SUBJECT_GRADE_MISMATCH =
+    "Subject grade level does not match class grade level";
+export const ERROR_EXAM_TERM_NOT_FOUND = "Term not found";
+export const ERROR_EXAM_TERM_YEAR_MISMATCH = "Term does not belong to the resolved academic year";
+export const ERROR_EXAM_EMPTY_UPDATE =
+    "At least one field must be provided: name, type, totalMarks, date, termId";
+export const ERROR_EXAM_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,
