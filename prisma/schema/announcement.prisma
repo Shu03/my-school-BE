@@ -1,0 +1,13 @@
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation("AnnouncementCreatedBy", fields: [createdById], references: [id])
+
+  @@index([createdAt])
+  @@map("announcements")
+}

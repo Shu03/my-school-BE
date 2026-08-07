@@ -111,6 +111,13 @@ export const ERROR_HOMEWORK_EMPTY_UPDATE =
 export const ERROR_HOMEWORK_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
 export const ERROR_HOMEWORK_FORBIDDEN_SCOPE = "You are not allowed to access this homework";
 
+// Announcement error messages
+export const ERROR_ANNOUNCEMENT_NOT_FOUND = "Announcement not found";
+export const ERROR_ANNOUNCEMENT_NOT_CREATOR = "You can only modify announcements you created";
+export const ERROR_ANNOUNCEMENT_EMPTY_UPDATE =
+    "At least one field must be provided: title, content";
+export const ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,
