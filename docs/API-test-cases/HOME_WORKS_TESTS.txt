@@ -1,0 +1,17 @@
+Test 1  — POST /homework (Admin) → create for any class/subject → 201
+Test 2  — POST /homework (assigned Subject Teacher, has HOMEWORK_MANAGE) → 201
+Test 3  — POST /homework (Teacher not assigned to that class/subject) → 403
+Test 4  — POST /homework (Teacher without HOMEWORK_MANAGE) → 403
+Test 5  — POST /homework subject gradeLevel mismatch → 400
+Test 6  — GET /homework (Admin) → sees all
+Test 7  — GET /homework (Teacher) → only assigned classes/subjects
+Test 8  — GET /homework (Student) → only own enrolled class
+Test 9  — GET /homework?subjectId= → filters correctly
+Test 10 — GET /homework/:id (Student, different class) → 403
+Test 11 — PATCH /homework/:id (Admin) → 200
+Test 12 — PATCH /homework/:id (creator Teacher) → 200
+Test 13 — PATCH /homework/:id (non-creator Teacher) → 403
+Test 14 — PATCH /homework/:id no fields → 400
+Test 15 — DELETE /homework/:id (creator Teacher) → 200
+Test 16 — DELETE /homework/:id (non-creator Teacher) → 403
+Test 17 — DELETE /homework/:id (Admin) → 200

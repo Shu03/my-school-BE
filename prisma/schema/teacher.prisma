@@ -29,6 +29,7 @@ model TeacherProfile {
   classAssignments TeacherClassAssignment[]
   examsCreated     Exam[]                   @relation("ExamCreatedBy")
   gradesEntered    Grade[]                  @relation("GradeGradedBy")
+  homeworkCreated  Homework[]               @relation("HomeworkCreatedBy")
 
   @@map("teacher_profiles")
 }

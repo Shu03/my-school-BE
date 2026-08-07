@@ -21,6 +21,8 @@ import { AttendanceModule } from "./modules/attendance/attendance.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClassesModule } from "./modules/classes/classes.module";
 import { ExamsModule } from "./modules/exams/exams.module";
+import { GradesModule } from "./modules/grades/grades.module";
+import { HomeworkModule } from "./modules/homework/homework.module";
 import { SchoolModule } from "./modules/school/school.module";
 import { StudentsModule } from "./modules/students/students.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
@@ -48,6 +50,8 @@ import { UsersModule } from "./modules/users/users.module";
         SchoolModule,
         AttendanceModule,
         ExamsModule,
+        GradesModule,
+        HomeworkModule,
     ],
     providers: [
         JwtStrategy,

@@ -13,6 +13,7 @@ model AcademicYear {
   exams       Exam[]
   holidays    Holiday[]
   terms       Term[]
+  homework    Homework[]
 
   @@map("academic_years")
 }
@@ -51,6 +52,7 @@ model Class {
   enrollments        StudentEnrollment[]
   exams              Exam[]
   teacherAssignments TeacherClassAssignment[]
+  homework           Homework[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -70,6 +72,7 @@ model Subject {
   // Relations
   exams              Exam[]
   teacherAssignments TeacherClassAssignment[]
+  homework           Homework[]
 
   @@unique([name, gradeLevel])
   @@unique([code, gradeLevel])

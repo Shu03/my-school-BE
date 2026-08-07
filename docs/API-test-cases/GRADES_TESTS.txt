@@ -1,0 +1,29 @@
+Test Checklist — Grades Service
+Entry Tests
+Test 1  — POST /exams/:examId/grades (Admin) → bulk enter for all enrolled students → 201
+Test 2  — POST /exams/:examId/grades (assigned Teacher with GRADES_WRITE) → 201
+Test 3  — POST /exams/:examId/grades (Teacher not assigned to subject/class) → 403
+Test 4  — POST /exams/:examId/grades (Teacher without GRADES_WRITE) → 403
+Test 5  — POST /exams/:examId/grades marksObtained > totalMarks → 400
+Test 6  — POST /exams/:examId/grades marksObtained < 0 → 400
+Test 7  — POST /exams/:examId/grades with student not enrolled in class → 400
+Test 8  — POST /exams/:examId/grades on finalized exam → 400
+Test 9  — POST /exams/:examId/grades re-submit (edit) before finalize → 200, replaces old values
+View Tests
+Test 10 — GET /exams/:examId/grades (Admin) → all student grades sorted by marks
+Test 11 — GET /exams/:examId/grades (assigned Teacher) → all student grades
+Test 12 — GET /exams/:examId/grades (unassigned Teacher) → 403
+Test 13 — GET /exams/:examId/grades (Student, own class) → sees only own grade
+Test 14 — GET /exams/:examId/grades (Student, different class exam) → empty or 403 (verify behavior)
+Summary Tests
+Test 15 — GET /exams/:examId/grades/summary (Admin) → classAverage, highest, lowest correct
+Test 16 — GET /exams/:examId/grades/summary (assigned Teacher) → 200
+Test 17 — GET /exams/:examId/grades/summary (Student) → 403
+Student History Tests
+Test 18 — GET /grades/student/:studentId (Admin) → full history across exams
+Test 19 — GET /grades/student/:studentId (own Student) → 200
+Test 20 — GET /grades/student/:studentId (different Student) → 403
+Test 21 — GET /grades/student/:studentId (Teacher assigned to student's class) → 200
+Test 22 — GET /grades/student/:studentId (Teacher never taught this student) → 403
+Test 23 — GET /grades/student/:studentId?subjectId= → filters correctly
+Test 24 — Percentage calculation correct — marksObtained/totalMarks*100

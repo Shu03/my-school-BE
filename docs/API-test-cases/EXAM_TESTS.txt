@@ -1,0 +1,38 @@
+Test Checklist — Exam Service
+Create Tests
+Test 1  — POST /exams (Admin) → create UNIT_TEST for Class 6A, Mathematics Grade 6, totalMarks 100
+Test 2  — POST /exams (Admin) → create MID_TERM for Class 7A, Mathematics Grade 7, totalMarks 50
+Test 3  — POST /exams (Admin) → no academicYearId → defaults to current year ✓
+Test 4  — POST /exams subject gradeLevel mismatch → 400
+Test 5  — POST /exams with termId not in current year → 400
+Test 6  — POST /exams (Teacher without GRADES_WRITE) → 403
+List + Get Tests
+Test 7  — GET /exams (Admin) → sees all active exams
+Test 8  — GET /exams (Admin) → filter by ?type=UNIT_TEST
+Test 9  — GET /exams (Admin) → filter by ?status=ACTIVE
+Test 10 — GET /exams/:id → returns exam with grade count + average
+Test 11 — GET /exams (Student) → only sees exams for enrolled classes
+Test 12 — GET /exams (Teacher with GRADES_READ) → only assigned class exams
+Test 13 — GET /exams (Teacher without GRADES_READ) → 403
+Update Tests
+Test 14 — PATCH /exams/:id (Admin) → update name, date → 200
+Test 15 — PATCH /exams/:id (creator Teacher) → 200
+Test 16 — PATCH /exams/:id (non-creator Teacher) → 403
+Test 17 — PATCH /exams/:id with no fields → 400 "At least one field must be provided"
+Test 18 — PATCH /exams/:id update termId to term from different year → 400
+Finalize Tests
+Test 19 — POST /exams/:id/finalize (Admin) → 200 isFinalized: true
+Test 20 — POST /exams/:id/finalize (creator Teacher) → 200
+Test 21 — POST /exams/:id/finalize (non-creator Teacher) → 403
+Test 22 — PATCH /exams/:id (finalized exam) → 400 cannot update finalized
+Test 23 — POST /exams/:id/finalize (already finalized) → 400
+Unlock Tests
+Test 24 — POST /exams/:id/unlock (Admin) → 200 isFinalized: false
+Test 25 — POST /exams/:id/unlock (Teacher) → 403
+Test 26 — PATCH /exams/:id (after unlock) → 200 can update again
+Discard Tests
+Test 27 — POST /exams/:id/discard (Admin) → 200 status: DISCARDED
+Test 28 — POST /exams/:id/discard (Teacher) → 403
+Test 29 — GET /exams → discarded exam not in results
+Test 30 — GET /exams?status=DISCARDED → shows discarded exams
+Test 31 — POST /exams/:id/finalize (discarded exam) → 400

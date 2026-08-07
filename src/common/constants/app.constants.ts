@@ -85,6 +85,32 @@ export const ERROR_EXAM_EMPTY_UPDATE =
     "At least one field must be provided: name, type, totalMarks, date, termId";
 export const ERROR_EXAM_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
 
+// Grade error messages
+export const ERROR_GRADE_MARKS_OUT_OF_RANGE =
+    "Marks obtained must be between 0 and the exam total marks";
+export const ERROR_GRADE_STUDENTS_NOT_ENROLLED =
+    "One or more students are not enrolled in the exam class";
+export const ERROR_GRADE_TEACHER_NOT_ASSIGNED = "You are not assigned to this exam's subject";
+export const ERROR_GRADE_FORBIDDEN_SCOPE = "You are not allowed to view these grades";
+export const ERROR_GRADE_TEACHER_PROFILE_NOT_FOUND = "Teacher profile not found for this account";
+export const ERROR_GRADE_STUDENT_PROFILE_NOT_FOUND = "Student profile not found for this account";
+export const ERROR_GRADE_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+
+// Homework error messages
+export const ERROR_HOMEWORK_NOT_FOUND = "Homework not found";
+export const ERROR_HOMEWORK_SUBJECT_GRADE_MISMATCH =
+    "The subject does not belong to the class's grade level";
+export const ERROR_HOMEWORK_NOT_ASSIGNED = "You are not assigned to this class and subject";
+export const ERROR_HOMEWORK_TEACHER_PROFILE_NOT_FOUND =
+    "Teacher profile not found for this account";
+export const ERROR_HOMEWORK_STUDENT_PROFILE_NOT_FOUND =
+    "Student profile not found for this account";
+export const ERROR_HOMEWORK_NOT_CREATOR = "You can only modify homework you created";
+export const ERROR_HOMEWORK_EMPTY_UPDATE =
+    "At least one field must be provided: title, description, dueDate";
+export const ERROR_HOMEWORK_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+export const ERROR_HOMEWORK_FORBIDDEN_SCOPE = "You are not allowed to access this homework";
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,

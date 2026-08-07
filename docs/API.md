@@ -184,6 +184,61 @@ Reactivate a user account (sets `isActive = true`).
 
 ---
 
+## Students
+
+All student endpoints are prefixed with `/students`.
+
+### Endpoints
+
+| Method | Path                                   | Description |
+| ------ | -------------------------------------- | ----------- |
+| POST   | `/students/promote`                    | Promote multiple students to a target class |
+| GET    | `/students`                            | List students (role scoped with pagination/search) |
+| GET    | `/students/:id`                        | Get one student profile with enrollments |
+| PATCH  | `/students/:id`                        | Update student profile |
+| POST   | `/students/:id/enroll`                 | Enroll student into class for an academic year |
+| GET    | `/students/:id/enrollments`            | Get student enrollment history |
+| PATCH  | `/students/:id/enrollments/:enrollmentId` | Update enrollment status/roll number |
+
+**See:** [FRONTEND_STUDENTS_GUIDE.md](FRONTEND_STUDENTS_GUIDE.md) for full request/response contracts, role scope rules, and frontend notes.
+
+---
+
+## School
+
+All school endpoints are prefixed with `/school`.
+
+### Endpoints
+
+| Method | Path                  | Description |
+| ------ | --------------------- | ----------- |
+| GET    | `/school/settings`    | Get school settings (weekly off-days) |
+| PATCH  | `/school/settings`    | Update school settings |
+| POST   | `/school/holidays`    | Create holiday |
+| GET    | `/school/holidays`    | List holidays (by academic year) |
+| DELETE | `/school/holidays/:id` | Delete holiday |
+
+**See:** [FRONTEND_SCHOOL_GUIDE.md](FRONTEND_SCHOOL_GUIDE.md) for full request/response contracts and frontend implementation notes.
+
+---
+
+## Attendance
+
+All attendance endpoints are prefixed with `/attendance`.
+
+### Endpoints
+
+| Method | Path                            | Description |
+| ------ | ------------------------------- | ----------- |
+| POST   | `/attendance/mark`              | Bulk mark attendance for class (current day) |
+| GET    | `/attendance`                   | Get class attendance by date |
+| GET    | `/attendance/student/:studentId` | Get student attendance history |
+| GET    | `/attendance/summary`           | Get monthly attendance summary for class |
+
+**See:** [FRONTEND_ATTENDANCE_GUIDE.md](FRONTEND_ATTENDANCE_GUIDE.md) for full request/response contracts, scope rules, and frontend implementation notes.
+
+---
+
 ## Auth
 
 All auth endpoints are prefixed with `/auth`.

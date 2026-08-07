@@ -45,6 +45,10 @@ export class ExamsService {
     ) {}
 
     private async assertExamExists(id: string): Promise<ExamBasic> {
+        return this.getByIdOrThrow(id);
+    }
+
+    public async getByIdOrThrow(id: string): Promise<ExamBasic> {
         const exam = await this.prismaService.exam.findUnique({
             where: { id },
             include: EXAM_INCLUDE,
