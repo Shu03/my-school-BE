@@ -8,12 +8,14 @@ model AcademicYear {
   updatedAt DateTime @updatedAt
 
   // Relations
-  classes     Class[]
-  enrollments StudentEnrollment[]
-  exams       Exam[]
-  holidays    Holiday[]
-  terms       Term[]
-  homework    Homework[]
+  classes       Class[]
+  enrollments   StudentEnrollment[]
+  exams         Exam[]
+  holidays      Holiday[]
+  terms         Term[]
+  homework      Homework[]
+  feeStructures FeeStructure[]
+  feeRecords    FeeRecord[]
 
   @@map("academic_years")
 }

@@ -48,6 +48,7 @@ export const PERMISSION_NOTES_UPLOAD = "NOTES_UPLOAD";
 export const PERMISSION_HOMEWORK_MANAGE = "HOMEWORK_MANAGE";
 export const PERMISSION_ANNOUNCEMENTS_MANAGE = "ANNOUNCEMENTS_MANAGE";
 export const PERMISSION_REPORTS_VIEW = "REPORTS_VIEW";
+export const PERMISSION_FEES_MANAGE = "FEES_MANAGE";
 
 // Students
 export const ROLL_NUMBER_PAD_WIDTH = 2;
@@ -118,6 +119,19 @@ export const ERROR_ANNOUNCEMENT_EMPTY_UPDATE =
     "At least one field must be provided: title, content";
 export const ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
 
+// Fee error messages
+export const ERROR_FEE_STRUCTURE_NOT_FOUND = "Fee structure not found";
+export const ERROR_FEE_RECORD_NOT_FOUND = "Fee record not found";
+export const ERROR_FEE_STRUCTURE_ALREADY_EXISTS =
+    "Fee structure already exists for grade %s in this academic year";
+export const ERROR_FEE_STRUCTURE_EMPTY_UPDATE =
+    "At least one field must be provided: totalAmount, dueDate";
+export const ERROR_FEE_TEACHER_PROFILE_NOT_FOUND = "Teacher profile not found for this account";
+export const ERROR_FEE_STUDENT_PROFILE_NOT_FOUND = "Student profile not found for this account";
+export const ERROR_FEE_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+export const ERROR_FEE_FORBIDDEN_SCOPE = "You are not allowed to access this fee record";
+export const ERROR_FEE_TEACHER_NO_ACCESS_TO_STUDENT = "You do not have access to this student";
+
 // All valid permissions as an array — used for validation in DTOs
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,
@@ -132,6 +146,7 @@ export const ALL_PERMISSIONS = [
     PERMISSION_HOMEWORK_MANAGE,
     PERMISSION_ANNOUNCEMENTS_MANAGE,
     PERMISSION_REPORTS_VIEW,
+    PERMISSION_FEES_MANAGE,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

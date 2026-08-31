@@ -13,6 +13,7 @@ model StudentProfile {
   attendances Attendance[]
   enrollments StudentEnrollment[]
   grades      Grade[]
+  feeRecords  FeeRecord[]
 
   @@map("student_profiles")
 }

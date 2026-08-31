@@ -2,12 +2,13 @@ import { Module } from "@nestjs/common";
 
 import { AcademicYearsModule } from "@modules/academic-years";
 import { ClassesModule } from "@modules/classes";
+import { FeesModule } from "@modules/fees";
 
 import { StudentsController } from "./students.controller";
 import { StudentsService } from "./students.service";
 
 @Module({
-    imports: [AcademicYearsModule, ClassesModule],
+    imports: [AcademicYearsModule, ClassesModule, FeesModule],
     providers: [StudentsService],
     controllers: [StudentsController],
     exports: [StudentsService],

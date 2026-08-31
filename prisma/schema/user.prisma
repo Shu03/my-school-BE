@@ -29,6 +29,7 @@ model User {
   teacherProfile TeacherProfile?
   studentProfile StudentProfile?
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
+  recordedFeePayments FeePayment[] @relation("FeePaymentRecordedBy")
 
   @@map("users")
 }

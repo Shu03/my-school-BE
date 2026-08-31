@@ -3,6 +3,7 @@ import {
     ConflictException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from "@nestjs/common";
 
@@ -12,6 +13,7 @@ import { ROLL_NUMBER_PAD_WIDTH } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years";
 import { ClassesService } from "@modules/classes";
+import { FeesService } from "@modules/fees";
 import { PrismaService } from "@modules/prisma";
 
 import {
@@ -30,10 +32,13 @@ import {
 
 @Injectable()
 export class StudentsService {
+    private readonly logger: Logger = new Logger(StudentsService.name);
+
     public constructor(
         private readonly prisma: PrismaService,
         private readonly academicYearsService: AcademicYearsService,
         private readonly classesService: ClassesService,
+        private readonly feesService: FeesService,
     ) {}
 
     // ─── Private Helpers ─────────────────────────────────────────────────────────
@@ -314,7 +319,7 @@ export class StudentsService {
             dto.rollNumber ?? (await this.generateRollNumber(dto.classId, academicYearId));
 
         try {
-            return await this.prisma.studentEnrollment.create({
+            const enrollment = await this.prisma.studentEnrollment.create({
                 data: {
                     studentId,
                     classId: dto.classId,
@@ -326,6 +331,20 @@ export class StudentsService {
                     academicYear: true,
                 },
             });
+
+            try {
+                await this.feesService.generateFeeRecordForStudent(
+                    studentId,
+                    dto.classId,
+                    academicYearId,
+                );
+            } catch (feeError) {
+                this.logger.warn(
+                    `Failed to generate fee record for student ${studentId}: ${String(feeError)}`,
+                );
+            }
+
+            return enrollment;
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
                 throw new ConflictException("Student is already enrolled in this academic year");
@@ -459,6 +478,18 @@ export class StudentsService {
                     },
                 });
             });
+
+            try {
+                await this.feesService.generateFeeRecordForStudent(
+                    studentId,
+                    dto.targetClassId,
+                    academicYearId,
+                );
+            } catch (feeError) {
+                this.logger.warn(
+                    `Failed to generate fee record for student ${studentId}: ${String(feeError)}`,
+                );
+            }
 
             promoted++;
         }
