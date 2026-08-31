@@ -1,3 +1,3 @@
 export { ExamsModule } from "./exams.module";
 export { ExamsService } from "./exams.service";
-export type { ExamBasic, ExamWithSummary } from "./exams.types";
+export type { ExamBasic, ExamSubjectBasic, ExamWithSummary } from "./exams.types";

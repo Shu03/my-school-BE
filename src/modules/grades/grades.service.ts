@@ -129,6 +129,7 @@ export class GradesService {
 
     public async enterGrades(
         examId: string,
+        subjectId: string,
         dto: BulkEnterGradesDto,
         requestingUser: JwtPayload,
     ): Promise<BulkGradeResult> {
@@ -142,6 +143,8 @@ export class GradesService {
             throw new BadRequestException(ERROR_EXAM_DISCARDED);
         }
 
+        const examSubject = await this.examsService.getExamSubjectOrThrow(examId, subjectId);
+
         let gradedById: string | null = null;
 
         if (requestingUser.role === Role.TEACHER) {
@@ -153,12 +156,12 @@ export class GradesService {
             await this.assertTeacherAssignedToExamSubject(
                 requestingUser.sub,
                 exam.classId,
-                exam.subjectId,
+                subjectId,
             );
         }
 
         for (const record of dto.records) {
-            this.assertMarksWithinRange(record.marksObtained, exam.totalMarks);
+            this.assertMarksWithinRange(record.marksObtained, examSubject.totalMarks);
         }
 
         const studentIds = dto.records.map((record) => record.studentId);
@@ -167,13 +170,13 @@ export class GradesService {
         await this.prismaService.$transaction([
             this.prismaService.grade.deleteMany({
                 where: {
-                    examId,
+                    examSubjectId: examSubject.id,
                     studentId: { in: studentIds },
                 },
             }),
             this.prismaService.grade.createMany({
                 data: dto.records.map((record) => ({
-                    examId,
+                    examSubjectId: examSubject.id,
                     studentId: record.studentId,
                     marksObtained: record.marksObtained,
                     gradedById,
@@ -182,31 +185,33 @@ export class GradesService {
             }),
         ]);
 
-        return { entered: dto.records.length, examId };
+        return { entered: dto.records.length, examId, subjectId };
     }
 
-    private async assertTeacherCanReadExam(
+    private async assertTeacherCanReadExamSubject(
         exam: ExamBasic,
+        subjectId: string,
         requestingUser: JwtPayload,
     ): Promise<void> {
         if (!requestingUser.permissions.includes(PERMISSION_GRADES_READ)) {
             throw new ForbiddenException(ERROR_GRADE_INSUFFICIENT_PERMISSIONS);
         }
 
-        await this.assertTeacherAssignedToExamSubject(
-            requestingUser.sub,
-            exam.classId,
-            exam.subjectId,
-        );
+        await this.assertTeacherAssignedToExamSubject(requestingUser.sub, exam.classId, subjectId);
     }
 
-    public async getExamGrades(examId: string, requestingUser: JwtPayload): Promise<GradeBasic[]> {
+    public async getExamSubjectGrades(
+        examId: string,
+        subjectId: string,
+        requestingUser: JwtPayload,
+    ): Promise<GradeBasic[]> {
         const exam = await this.examsService.getByIdOrThrow(examId);
+        const examSubject = await this.examsService.getExamSubjectOrThrow(examId, subjectId);
 
-        const where: Prisma.GradeWhereInput = { examId };
+        const where: Prisma.GradeWhereInput = { examSubjectId: examSubject.id };
 
         if (requestingUser.role === Role.TEACHER) {
-            await this.assertTeacherCanReadExam(exam, requestingUser);
+            await this.assertTeacherCanReadExamSubject(exam, subjectId, requestingUser);
         } else if (requestingUser.role === Role.STUDENT) {
             const studentProfileId = await this.resolveStudentProfileId(requestingUser.sub);
             where.studentId = studentProfileId;
@@ -219,22 +224,24 @@ export class GradesService {
         });
     }
 
-    public async getExamSummary(
+    public async getExamSubjectSummary(
         examId: string,
+        subjectId: string,
         requestingUser: JwtPayload,
     ): Promise<ExamGradesSummary> {
         const exam = await this.examsService.getByIdOrThrow(examId);
+        const examSubject = await this.examsService.getExamSubjectOrThrow(examId, subjectId);
 
         if (requestingUser.role === Role.STUDENT) {
             throw new ForbiddenException(ERROR_GRADE_FORBIDDEN_SCOPE);
         }
 
         if (requestingUser.role === Role.TEACHER) {
-            await this.assertTeacherCanReadExam(exam, requestingUser);
+            await this.assertTeacherCanReadExamSubject(exam, subjectId, requestingUser);
         }
 
         const grades = await this.prismaService.grade.findMany({
-            where: { examId },
+            where: { examSubjectId: examSubject.id },
             include: GRADE_STUDENT_INCLUDE,
             orderBy: { marksObtained: "desc" },
         });
@@ -243,7 +250,7 @@ export class GradesService {
             studentId: grade.studentId,
             name: `${grade.student.user.firstName} ${grade.student.user.lastName}`,
             marksObtained: grade.marksObtained,
-            percentage: (grade.marksObtained / exam.totalMarks) * 100,
+            percentage: (grade.marksObtained / examSubject.totalMarks) * 100,
         }));
 
         let classAverage: number | null = null;
@@ -260,7 +267,9 @@ export class GradesService {
         return {
             examId: exam.id,
             examName: exam.name,
-            totalMarks: exam.totalMarks,
+            subjectId: examSubject.subjectId,
+            subjectName: examSubject.subject.name,
+            totalMarks: examSubject.totalMarks,
             classAverage,
             highest,
             lowest,
@@ -315,31 +324,32 @@ export class GradesService {
         const grades = await this.prismaService.grade.findMany({
             where: {
                 studentId,
-                exam: {
-                    academicYearId,
+                examSubject: {
+                    exam: { academicYearId },
                     ...(dto.subjectId !== undefined && { subjectId: dto.subjectId }),
                 },
             },
             include: {
-                exam: {
+                examSubject: {
                     include: {
                         subject: true,
-                        class: true,
+                        exam: true,
                     },
                 },
             },
-            orderBy: { exam: { date: "desc" } },
+            orderBy: { examSubject: { date: "desc" } },
         });
 
         const exams: StudentGradeHistoryEntry[] = grades.map((grade) => ({
-            examId: grade.examId,
-            examName: grade.exam.name,
-            subjectName: grade.exam.subject.name,
-            type: grade.exam.type,
+            examId: grade.examSubject.examId,
+            examName: grade.examSubject.exam.name,
+            subjectId: grade.examSubject.subjectId,
+            subjectName: grade.examSubject.subject.name,
+            type: grade.examSubject.exam.type,
             marksObtained: grade.marksObtained,
-            totalMarks: grade.exam.totalMarks,
-            percentage: (grade.marksObtained / grade.exam.totalMarks) * 100,
-            date: grade.exam.date,
+            totalMarks: grade.examSubject.totalMarks,
+            percentage: (grade.marksObtained / grade.examSubject.totalMarks) * 100,
+            date: grade.examSubject.date,
         }));
 
         return { studentId, exams };

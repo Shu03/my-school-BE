@@ -4,6 +4,6 @@ export type {
     BulkGradeResult,
     ExamGradesSummary,
     GradeBasic,
-    GradeWithExam,
+    GradeWithExamSubject,
     StudentGradeHistory,
 } from "./grades.types";

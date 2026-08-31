@@ -18,34 +18,37 @@ import { GradesService } from "./grades.service";
 export class GradesController {
     public constructor(private readonly gradesService: GradesService) {}
 
-    @Post("exams/:examId/grades")
+    @Post("exams/:examId/subjects/:subjectId/grades")
     @Roles(Role.ADMIN, Role.TEACHER)
     @Permissions(PERMISSION_GRADES_WRITE)
     public enterGrades(
         @Param("examId", ParseUUIDPipe) examId: string,
+        @Param("subjectId", ParseUUIDPipe) subjectId: string,
         @Body() dto: BulkEnterGradesDto,
         @CurrentUser() user: JwtPayload,
     ): ReturnType<GradesService["enterGrades"]> {
-        return this.gradesService.enterGrades(examId, dto, user);
+        return this.gradesService.enterGrades(examId, subjectId, dto, user);
     }
 
-    @Get("exams/:examId/grades")
+    @Get("exams/:examId/subjects/:subjectId/grades")
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
-    public getExamGrades(
+    public getExamSubjectGrades(
         @Param("examId", ParseUUIDPipe) examId: string,
+        @Param("subjectId", ParseUUIDPipe) subjectId: string,
         @CurrentUser() user: JwtPayload,
-    ): ReturnType<GradesService["getExamGrades"]> {
-        return this.gradesService.getExamGrades(examId, user);
+    ): ReturnType<GradesService["getExamSubjectGrades"]> {
+        return this.gradesService.getExamSubjectGrades(examId, subjectId, user);
     }
 
-    @Get("exams/:examId/grades/summary")
+    @Get("exams/:examId/subjects/:subjectId/grades/summary")
     @Roles(Role.ADMIN, Role.TEACHER)
     @Permissions(PERMISSION_GRADES_READ)
-    public getExamSummary(
+    public getExamSubjectSummary(
         @Param("examId", ParseUUIDPipe) examId: string,
+        @Param("subjectId", ParseUUIDPipe) subjectId: string,
         @CurrentUser() user: JwtPayload,
-    ): ReturnType<GradesService["getExamSummary"]> {
-        return this.gradesService.getExamSummary(examId, user);
+    ): ReturnType<GradesService["getExamSubjectSummary"]> {
+        return this.gradesService.getExamSubjectSummary(examId, subjectId, user);
     }
 
     @Get("grades/student/:studentId")

@@ -14,12 +14,12 @@ export type GradeBasic = Prisma.GradeGetPayload<{
     };
 }>;
 
-export type GradeWithExam = Prisma.GradeGetPayload<{
+export type GradeWithExamSubject = Prisma.GradeGetPayload<{
     include: {
-        exam: {
+        examSubject: {
             include: {
                 subject: true;
-                class: true;
+                exam: true;
             };
         };
     };
@@ -35,6 +35,8 @@ export interface ExamGradeStudentSummary {
 export interface ExamGradesSummary {
     examId: string;
     examName: string;
+    subjectId: string;
+    subjectName: string;
     totalMarks: number;
     classAverage: number | null;
     highest: number | null;
@@ -45,6 +47,7 @@ export interface ExamGradesSummary {
 export interface StudentGradeHistoryEntry {
     examId: string;
     examName: string;
+    subjectId: string;
     subjectName: string;
     type: string;
     marksObtained: number;
@@ -61,4 +64,5 @@ export interface StudentGradeHistory {
 export interface BulkGradeResult {
     entered: number;
     examId: string;
+    subjectId: string;
 }

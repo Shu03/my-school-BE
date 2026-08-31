@@ -82,9 +82,14 @@ export const ERROR_EXAM_SUBJECT_GRADE_MISMATCH =
     "Subject grade level does not match class grade level";
 export const ERROR_EXAM_TERM_NOT_FOUND = "Term not found";
 export const ERROR_EXAM_TERM_YEAR_MISMATCH = "Term does not belong to the resolved academic year";
-export const ERROR_EXAM_EMPTY_UPDATE =
-    "At least one field must be provided: name, type, totalMarks, date, termId";
+export const ERROR_EXAM_EMPTY_UPDATE = "At least one field must be provided: name, type, termId";
 export const ERROR_EXAM_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+export const ERROR_EXAM_NO_SUBJECTS = "An exam must have at least one subject";
+export const ERROR_EXAM_DUPLICATE_SUBJECT = "Duplicate subjects are not allowed in an exam";
+export const ERROR_EXAM_SUBJECT_NOT_FOUND = "Subject is not part of this exam";
+export const ERROR_EXAM_SUBJECT_ALREADY_EXISTS = "This subject is already part of the exam";
+export const ERROR_EXAM_SUBJECT_EMPTY_UPDATE =
+    "At least one field must be provided: totalMarks, date";
 
 // Grade error messages
 export const ERROR_GRADE_MARKS_OUT_OF_RANGE =

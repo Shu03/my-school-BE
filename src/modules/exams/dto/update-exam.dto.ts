@@ -2,18 +2,7 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 
 import { ExamType } from "@prisma/client";
 import { Transform } from "class-transformer";
-import {
-    IsEnum,
-    IsISO8601,
-    IsNotEmpty,
-    IsNumber,
-    IsOptional,
-    IsString,
-    IsUUID,
-    Max,
-    MaxLength,
-    Min,
-} from "class-validator";
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 
 export class UpdateExamDto {
     @ApiPropertyOptional({ example: "Unit Test 1" })
@@ -28,18 +17,6 @@ export class UpdateExamDto {
     @IsEnum(ExamType)
     @IsOptional()
     public type?: ExamType;
-
-    @ApiPropertyOptional({ example: 100 })
-    @IsNumber()
-    @Min(1)
-    @Max(1000)
-    @IsOptional()
-    public totalMarks?: number;
-
-    @ApiPropertyOptional({ example: "2026-08-04" })
-    @IsISO8601({ strict: true })
-    @IsOptional()
-    public date?: string;
 
     @ApiPropertyOptional({ example: "uuid-of-term" })
     @IsUUID()

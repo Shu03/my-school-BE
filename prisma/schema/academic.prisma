@@ -70,7 +70,7 @@ model Subject {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  exams              Exam[]
+  examSubjects       ExamSubject[]
   teacherAssignments TeacherClassAssignment[]
   homework           Homework[]
 

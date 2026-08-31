@@ -53,6 +53,8 @@ async function main(): Promise<void> {
     // ── Grades / Exams ────────────────────────────────────
     await prisma.grade.deleteMany({});
     console.log("  ✓ grades");
+    await prisma.examSubject.deleteMany({});
+    console.log("  ✓ exam_subjects");
     await prisma.exam.deleteMany({});
     console.log("  ✓ exams");
 

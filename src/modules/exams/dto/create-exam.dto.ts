@@ -1,19 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 import { ExamType } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
+    ArrayNotEmpty,
+    IsArray,
     IsEnum,
-    IsISO8601,
     IsNotEmpty,
-    IsNumber,
     IsOptional,
     IsString,
     IsUUID,
-    Max,
     MaxLength,
-    Min,
+    ValidateNested,
 } from "class-validator";
+
+import { ExamSubjectInputDto } from "./exam-subject-input.dto";
 
 export class CreateExamDto {
     @ApiProperty({ example: "Unit Test 1" })
@@ -31,10 +32,6 @@ export class CreateExamDto {
     @IsUUID()
     public classId!: string;
 
-    @ApiProperty({ example: "uuid-of-subject" })
-    @IsUUID()
-    public subjectId!: string;
-
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()
     @IsOptional()
@@ -45,14 +42,10 @@ export class CreateExamDto {
     @IsOptional()
     public termId?: string;
 
-    @ApiProperty({ example: 100 })
-    @IsNumber()
-    @Min(1)
-    @Max(1000)
-    public totalMarks!: number;
-
-    @ApiProperty({ example: "2026-08-04" })
-    @IsISO8601({ strict: true })
-    @IsNotEmpty()
-    public date!: string;
+    @ApiProperty({ type: [ExamSubjectInputDto] })
+    @IsArray()
+    @ArrayNotEmpty()
+    @ValidateNested({ each: true })
+    @Type(() => ExamSubjectInputDto)
+    public subjects!: ExamSubjectInputDto[];
 }

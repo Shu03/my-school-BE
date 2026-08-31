@@ -9,13 +9,18 @@ import { EnrollmentStatus, ExamStatus, Prisma, Role, TeacherClassRole } from "@p
 
 import {
     ERROR_EXAM_DISCARDED,
+    ERROR_EXAM_DUPLICATE_SUBJECT,
     ERROR_EXAM_EMPTY_UPDATE,
     ERROR_EXAM_FINALIZED,
     ERROR_EXAM_INSUFFICIENT_PERMISSIONS,
+    ERROR_EXAM_NO_SUBJECTS,
     ERROR_EXAM_NOT_CLASS_TEACHER,
     ERROR_EXAM_NOT_CREATOR,
     ERROR_EXAM_NOT_FOUND,
+    ERROR_EXAM_SUBJECT_ALREADY_EXISTS,
+    ERROR_EXAM_SUBJECT_EMPTY_UPDATE,
     ERROR_EXAM_SUBJECT_GRADE_MISMATCH,
+    ERROR_EXAM_SUBJECT_NOT_FOUND,
     ERROR_EXAM_TEACHER_PROFILE_NOT_FOUND,
     ERROR_EXAM_TERM_NOT_FOUND,
     ERROR_EXAM_TERM_YEAR_MISMATCH,
@@ -26,15 +31,21 @@ import { AcademicYearsService } from "@modules/academic-years/academic-years.ser
 import { JwtPayload } from "@modules/auth";
 import { PrismaService } from "@modules/prisma/prisma.service";
 
+import { AddExamSubjectDto } from "./dto/add-exam-subject.dto";
 import { CreateExamDto } from "./dto/create-exam.dto";
+import { ExamSubjectInputDto } from "./dto/exam-subject-input.dto";
 import { ListExamsDto } from "./dto/list-exams.dto";
+import { UpdateExamSubjectDto } from "./dto/update-exam-subject.dto";
 import { UpdateExamDto } from "./dto/update-exam.dto";
-import { ExamBasic, ExamWithSummary } from "./exams.types";
+import { ExamBasic, ExamSubjectBasic, ExamSubjectSummary, ExamWithSummary } from "./exams.types";
 
 const EXAM_INCLUDE = {
     class: true,
-    subject: true,
     academicYear: true,
+    examSubjects: {
+        include: { subject: true },
+        orderBy: { date: "asc" },
+    },
 } satisfies Prisma.ExamInclude;
 
 @Injectable()
@@ -61,6 +72,22 @@ export class ExamsService {
         return exam;
     }
 
+    public async getExamSubjectOrThrow(
+        examId: string,
+        subjectId: string,
+    ): Promise<ExamSubjectBasic> {
+        const examSubject = await this.prismaService.examSubject.findUnique({
+            where: { examId_subjectId: { examId, subjectId } },
+            include: { subject: true },
+        });
+
+        if (!examSubject) {
+            throw new NotFoundException(ERROR_EXAM_SUBJECT_NOT_FOUND);
+        }
+
+        return examSubject;
+    }
+
     private assertExamNotFinalized(exam: ExamBasic): void {
         if (exam.isFinalized) {
             throw new BadRequestException(ERROR_EXAM_FINALIZED);
@@ -74,6 +101,13 @@ export class ExamsService {
     }
 
     private async assertCanFinalize(exam: ExamBasic, requestingUser: JwtPayload): Promise<void> {
+        await this.assertIsCreatorOrAdmin(exam, requestingUser);
+    }
+
+    private async assertIsCreatorOrAdmin(
+        exam: ExamBasic,
+        requestingUser: JwtPayload,
+    ): Promise<void> {
         if (requestingUser.role === Role.ADMIN) {
             return;
         }
@@ -141,6 +175,25 @@ export class ExamsService {
         }
     }
 
+    private assertNoDuplicateSubjects(subjectIds: string[]): void {
+        if (subjectIds.length === 0) {
+            throw new BadRequestException(ERROR_EXAM_NO_SUBJECTS);
+        }
+
+        if (new Set(subjectIds).size !== subjectIds.length) {
+            throw new BadRequestException(ERROR_EXAM_DUPLICATE_SUBJECT);
+        }
+    }
+
+    private async assertSubjectsMatchClassGrade(
+        subjects: ExamSubjectInputDto[],
+        classId: string,
+    ): Promise<void> {
+        for (const subject of subjects) {
+            await this.assertSubjectMatchesClassGrade(subject.subjectId, classId);
+        }
+    }
+
     private async assertTermBelongsToYear(termId: string, academicYearId: string): Promise<void> {
         const term = await this.prismaService.term.findUnique({
             where: { id: termId },
@@ -164,7 +217,8 @@ export class ExamsService {
             await this.assertIsClassTeacherOfClass(dto.classId, requestingUser.sub);
         }
 
-        await this.assertSubjectMatchesClassGrade(dto.subjectId, dto.classId);
+        this.assertNoDuplicateSubjects(dto.subjects.map((subject) => subject.subjectId));
+        await this.assertSubjectsMatchClassGrade(dto.subjects, dto.classId);
 
         let academicYearId = dto.academicYearId;
 
@@ -182,12 +236,16 @@ export class ExamsService {
                 name: dto.name,
                 type: dto.type,
                 classId: dto.classId,
-                subjectId: dto.subjectId,
                 academicYearId,
-                totalMarks: dto.totalMarks,
-                date: new Date(dto.date),
                 createdById,
                 ...(dto.termId !== undefined && { termId: dto.termId }),
+                examSubjects: {
+                    create: dto.subjects.map((subject) => ({
+                        subjectId: subject.subjectId,
+                        totalMarks: subject.totalMarks,
+                        date: new Date(subject.date),
+                    })),
+                },
             },
             include: EXAM_INCLUDE,
         });
@@ -211,7 +269,9 @@ export class ExamsService {
             academicYearId,
             status: dto.status ?? ExamStatus.ACTIVE,
             ...(dto.classId !== undefined && { classId: dto.classId }),
-            ...(dto.subjectId !== undefined && { subjectId: dto.subjectId }),
+            ...(dto.subjectId !== undefined && {
+                examSubjects: { some: { subjectId: dto.subjectId } },
+            }),
             ...(dto.type !== undefined && { type: dto.type }),
         };
 
@@ -241,7 +301,7 @@ export class ExamsService {
             this.prismaService.exam.findMany({
                 where,
                 include: EXAM_INCLUDE,
-                orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+                orderBy: { createdAt: "desc" },
                 skip: (page - 1) * limit,
                 take: limit,
             }),
@@ -286,17 +346,37 @@ export class ExamsService {
             }
         }
 
-        const summary = await this.prismaService.grade.aggregate({
-            where: { examId: id },
-            _count: { _all: true },
-            _avg: { marksObtained: true },
+        const examSubjectIds = exam.examSubjects.map((examSubject) => examSubject.id);
+
+        const aggregates =
+            examSubjectIds.length > 0
+                ? await this.prismaService.grade.groupBy({
+                      by: ["examSubjectId"],
+                      where: { examSubjectId: { in: examSubjectIds } },
+                      _count: { _all: true },
+                      _avg: { marksObtained: true },
+                  })
+                : [];
+
+        const aggregateByExamSubject = new Map(
+            aggregates.map((aggregate) => [aggregate.examSubjectId, aggregate]),
+        );
+
+        const subjectSummaries: ExamSubjectSummary[] = exam.examSubjects.map((examSubject) => {
+            const aggregate = aggregateByExamSubject.get(examSubject.id);
+
+            return {
+                examSubjectId: examSubject.id,
+                subjectId: examSubject.subjectId,
+                subjectName: examSubject.subject.name,
+                totalMarks: examSubject.totalMarks,
+                date: examSubject.date,
+                gradeCount: aggregate?._count._all ?? 0,
+                averageMarks: aggregate?._avg.marksObtained ?? null,
+            };
         });
 
-        return {
-            ...exam,
-            gradeCount: summary._count._all,
-            averageMarks: summary._avg.marksObtained,
-        };
+        return { ...exam, subjectSummaries };
     }
 
     public async update(
@@ -304,27 +384,14 @@ export class ExamsService {
         dto: UpdateExamDto,
         requestingUser: JwtPayload,
     ): Promise<ExamBasic> {
-        if (
-            dto.name === undefined &&
-            dto.type === undefined &&
-            dto.totalMarks === undefined &&
-            dto.date === undefined &&
-            dto.termId === undefined
-        ) {
+        if (dto.name === undefined && dto.type === undefined && dto.termId === undefined) {
             throw new BadRequestException(ERROR_EXAM_EMPTY_UPDATE);
         }
 
         const exam = await this.assertExamExists(id);
         this.assertExamNotFinalized(exam);
         this.assertExamNotDiscarded(exam);
-
-        if (requestingUser.role === Role.TEACHER) {
-            const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-
-            if (exam.createdById !== teacherProfileId) {
-                throw new ForbiddenException(ERROR_EXAM_NOT_CREATOR);
-            }
-        }
+        await this.assertIsCreatorOrAdmin(exam, requestingUser);
 
         if (dto.termId !== undefined) {
             await this.assertTermBelongsToYear(dto.termId, exam.academicYearId);
@@ -335,12 +402,87 @@ export class ExamsService {
             data: {
                 ...(dto.name !== undefined && { name: dto.name }),
                 ...(dto.type !== undefined && { type: dto.type }),
-                ...(dto.totalMarks !== undefined && { totalMarks: dto.totalMarks }),
-                ...(dto.date !== undefined && { date: new Date(dto.date) }),
                 ...(dto.termId !== undefined && { termId: dto.termId }),
             },
             include: EXAM_INCLUDE,
         });
+    }
+
+    public async addSubject(
+        id: string,
+        dto: AddExamSubjectDto,
+        requestingUser: JwtPayload,
+    ): Promise<ExamBasic> {
+        const exam = await this.assertExamExists(id);
+        this.assertExamNotFinalized(exam);
+        this.assertExamNotDiscarded(exam);
+        await this.assertIsCreatorOrAdmin(exam, requestingUser);
+
+        if (exam.examSubjects.some((examSubject) => examSubject.subjectId === dto.subjectId)) {
+            throw new BadRequestException(ERROR_EXAM_SUBJECT_ALREADY_EXISTS);
+        }
+
+        await this.assertSubjectMatchesClassGrade(dto.subjectId, exam.classId);
+
+        await this.prismaService.examSubject.create({
+            data: {
+                examId: id,
+                subjectId: dto.subjectId,
+                totalMarks: dto.totalMarks,
+                date: new Date(dto.date),
+            },
+        });
+
+        return this.getByIdOrThrow(id);
+    }
+
+    public async updateSubject(
+        id: string,
+        subjectId: string,
+        dto: UpdateExamSubjectDto,
+        requestingUser: JwtPayload,
+    ): Promise<ExamBasic> {
+        if (dto.totalMarks === undefined && dto.date === undefined) {
+            throw new BadRequestException(ERROR_EXAM_SUBJECT_EMPTY_UPDATE);
+        }
+
+        const exam = await this.assertExamExists(id);
+        this.assertExamNotFinalized(exam);
+        this.assertExamNotDiscarded(exam);
+        await this.assertIsCreatorOrAdmin(exam, requestingUser);
+        await this.getExamSubjectOrThrow(id, subjectId);
+
+        await this.prismaService.examSubject.update({
+            where: { examId_subjectId: { examId: id, subjectId } },
+            data: {
+                ...(dto.totalMarks !== undefined && { totalMarks: dto.totalMarks }),
+                ...(dto.date !== undefined && { date: new Date(dto.date) }),
+            },
+        });
+
+        return this.getByIdOrThrow(id);
+    }
+
+    public async removeSubject(
+        id: string,
+        subjectId: string,
+        requestingUser: JwtPayload,
+    ): Promise<ExamBasic> {
+        const exam = await this.assertExamExists(id);
+        this.assertExamNotFinalized(exam);
+        this.assertExamNotDiscarded(exam);
+        await this.assertIsCreatorOrAdmin(exam, requestingUser);
+        await this.getExamSubjectOrThrow(id, subjectId);
+
+        if (exam.examSubjects.length <= 1) {
+            throw new BadRequestException(ERROR_EXAM_NO_SUBJECTS);
+        }
+
+        await this.prismaService.examSubject.delete({
+            where: { examId_subjectId: { examId: id, subjectId } },
+        });
+
+        return this.getByIdOrThrow(id);
     }
 
     public async finalize(id: string, requestingUser: JwtPayload): Promise<ExamBasic> {

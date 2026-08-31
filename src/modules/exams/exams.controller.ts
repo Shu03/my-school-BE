@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     HttpCode,
     HttpStatus,
@@ -27,8 +28,10 @@ import { CurrentUser, Permissions, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
+import { AddExamSubjectDto } from "./dto/add-exam-subject.dto";
 import { CreateExamDto } from "./dto/create-exam.dto";
 import { ListExamsDto } from "./dto/list-exams.dto";
+import { UpdateExamSubjectDto } from "./dto/update-exam-subject.dto";
 import { UpdateExamDto } from "./dto/update-exam.dto";
 import { ExamsService } from "./exams.service";
 
@@ -91,6 +94,55 @@ export class ExamsController {
         @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<ExamsService["update"]>> {
         return this.examsService.update(id, dto, user);
+    }
+
+    @Post(":id/subjects")
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @Permissions(PERMISSION_GRADES_WRITE)
+    @ApiOperation({ summary: "Add a subject to a non-finalized exam" })
+    @ApiCreatedResponse({ description: "Subject added successfully" })
+    @ApiNotFoundResponse({ description: "Exam not found" })
+    @ApiBadRequestResponse({ description: "Subject already added or grade level mismatch" })
+    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
+    public async addSubject(
+        @Param("id") id: string,
+        @Body() dto: AddExamSubjectDto,
+        @CurrentUser() user: JwtPayload,
+    ): Promise<ReturnType<ExamsService["addSubject"]>> {
+        return this.examsService.addSubject(id, dto, user);
+    }
+
+    @Patch(":id/subjects/:subjectId")
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @Permissions(PERMISSION_GRADES_WRITE)
+    @ApiOperation({ summary: "Update an exam subject's marks or date" })
+    @ApiOkResponse({ description: "Exam subject updated successfully" })
+    @ApiNotFoundResponse({ description: "Exam or subject not found" })
+    @ApiBadRequestResponse({ description: "Validation failed or exam finalized/discarded" })
+    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
+    public async updateSubject(
+        @Param("id") id: string,
+        @Param("subjectId") subjectId: string,
+        @Body() dto: UpdateExamSubjectDto,
+        @CurrentUser() user: JwtPayload,
+    ): Promise<ReturnType<ExamsService["updateSubject"]>> {
+        return this.examsService.updateSubject(id, subjectId, dto, user);
+    }
+
+    @Delete(":id/subjects/:subjectId")
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @Permissions(PERMISSION_GRADES_WRITE)
+    @ApiOperation({ summary: "Remove a subject from a non-finalized exam" })
+    @ApiOkResponse({ description: "Exam subject removed successfully" })
+    @ApiNotFoundResponse({ description: "Exam or subject not found" })
+    @ApiBadRequestResponse({ description: "Cannot remove the last subject or exam finalized" })
+    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
+    public async removeSubject(
+        @Param("id") id: string,
+        @Param("subjectId") subjectId: string,
+        @CurrentUser() user: JwtPayload,
+    ): Promise<ReturnType<ExamsService["removeSubject"]>> {
+        return this.examsService.removeSubject(id, subjectId, user);
     }
 
     @Post(":id/finalize")

@@ -17,11 +17,8 @@ model Exam {
   name           String
   type           ExamType
   classId        String
-  subjectId      String
   academicYearId String
   termId         String?
-  totalMarks     Float
-  date           DateTime   @db.Date
   isFinalized    Boolean    @default(false)
   status         ExamStatus @default(ACTIVE)
   createdById    String?
@@ -29,20 +26,36 @@ model Exam {
   updatedAt      DateTime   @updatedAt
 
   class        Class           @relation(fields: [classId], references: [id])
-  subject      Subject         @relation(fields: [subjectId], references: [id])
   academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
   term         Term?           @relation(fields: [termId], references: [id])
   createdBy    TeacherProfile? @relation("ExamCreatedBy", fields: [createdById], references: [id])
-  grades       Grade[]
+  examSubjects ExamSubject[]
 
   @@index([classId, academicYearId])
-  @@index([subjectId, academicYearId])
   @@map("exams")
+}
+
+model ExamSubject {
+  id         String   @id @default(uuid())
+  examId     String
+  subjectId  String
+  totalMarks Float
+  date       DateTime @db.Date
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id])
+  grades  Grade[]
+
+  @@unique([examId, subjectId])
+  @@index([subjectId])
+  @@map("exam_subjects")
 }
 
 model Grade {
   id            String   @id @default(uuid())
-  examId        String
+  examSubjectId String
   studentId     String
   marksObtained Float
   remarks       String?
@@ -50,12 +63,12 @@ model Grade {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  exam     Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student  StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  gradedBy TeacherProfile? @relation("GradeGradedBy", fields: [gradedById], references: [id])
+  examSubject ExamSubject     @relation(fields: [examSubjectId], references: [id], onDelete: Cascade)
+  student     StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gradedBy    TeacherProfile? @relation("GradeGradedBy", fields: [gradedById], references: [id])
 
-  @@unique([examId, studentId])
+  @@unique([examSubjectId, studentId])
   @@index([studentId])
-  @@index([examId])
+  @@index([examSubjectId])
   @@map("grades")
 }
