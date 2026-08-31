@@ -19,15 +19,15 @@ All endpoints are prefixed with `/students`.
 
 ## Access Matrix
 
-| Endpoint | ADMIN | TEACHER | STUDENT |
-| --- | --- | --- | --- |
-| `POST /students/promote` | Yes | No | No |
-| `GET /students` | Yes | Yes | Yes |
-| `GET /students/:id` | Yes | Yes (scoped) | Yes (self only) |
-| `PATCH /students/:id` | Yes | No | No |
-| `POST /students/:id/enroll` | Yes | No | No |
-| `GET /students/:id/enrollments` | Yes | No | Yes (self only) |
-| `PATCH /students/:id/enrollments/:enrollmentId` | Yes | No | No |
+| Endpoint                                        | ADMIN | TEACHER      | STUDENT         |
+| ----------------------------------------------- | ----- | ------------ | --------------- |
+| `POST /students/promote`                        | Yes   | No           | No              |
+| `GET /students`                                 | Yes   | Yes          | Yes             |
+| `GET /students/:id`                             | Yes   | Yes (scoped) | Yes (self only) |
+| `PATCH /students/:id`                           | Yes   | No           | No              |
+| `POST /students/:id/enroll`                     | Yes   | No           | No              |
+| `GET /students/:id/enrollments`                 | Yes   | No           | Yes (self only) |
+| `PATCH /students/:id/enrollments/:enrollmentId` | Yes   | No           | No              |
 
 ---
 
@@ -37,8 +37,8 @@ All endpoints are prefixed with `/students`.
 
 - **ADMIN**: can list all students; optional class filter applies.
 - **TEACHER**: sees only students with **ACTIVE** enrollment in teacher-owned classes.
-  - Teacher-owned classes include class assignments and class-teacher classes.
-  - If teacher sends `classId` outside their scope, result is empty.
+    - Teacher-owned classes include class assignments and class-teacher classes.
+    - If teacher sends `classId` outside their scope, result is empty.
 - **STUDENT**: sees only their own student profile.
 
 ### `GET /students/:id`
@@ -84,9 +84,9 @@ All endpoints are prefixed with `/students`.
 - If `academicYearId` is omitted, backend uses current academic year.
 - Target class must belong to the resolved academic year.
 - For each student:
-  - if student not found, student is skipped
-  - if already enrolled in target academic year, student is skipped
-  - otherwise previous ACTIVE enrollment (if any) is marked `PROMOTED`, then new enrollment is created in target class
+    - if student not found, student is skipped
+    - if already enrolled in target academic year, student is skipped
+    - otherwise previous ACTIVE enrollment (if any) is marked `PROMOTED`, then new enrollment is created in target class
 - New roll numbers are assigned sequentially in target class and padded to width 2 (`01`, `02`, ...).
 
 **Response - Success (201 Created):**
@@ -124,13 +124,13 @@ All endpoints are prefixed with `/students`.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Max | Description |
-| --- | --- | --- | --- | --- |
-| `classId` | UUID | - | - | Filter by class (subject to role scope) |
-| `academicYearId` | UUID | current year | - | Academic year filter |
-| `search` | string | - | 100 | Case-insensitive search on first name, last name, admission number |
-| `page` | integer | 1 | - | 1-indexed page number |
-| `limit` | integer | 20 | 100 | Items per page |
+| Parameter        | Type    | Default      | Max | Description                                                        |
+| ---------------- | ------- | ------------ | --- | ------------------------------------------------------------------ |
+| `classId`        | UUID    | -            | -   | Filter by class (subject to role scope)                            |
+| `academicYearId` | UUID    | current year | -   | Academic year filter                                               |
+| `search`         | string  | -            | 100 | Case-insensitive search on first name, last name, admission number |
+| `page`           | integer | 1            | -   | 1-indexed page number                                              |
+| `limit`          | integer | 20           | 100 | Items per page                                                     |
 
 **Example:**
 
@@ -227,7 +227,6 @@ GET /students?academicYearId=year-uuid&classId=class-uuid&search=adm&page=1&limi
                 "name": "6A",
                 "gradeLevel": 6,
                 "academicYearId": "year-uuid",
-                "classTeacherId": "teacher-profile-uuid",
                 "createdAt": "2026-06-01T08:00:00.000Z",
                 "updatedAt": "2026-06-20T09:00:00.000Z"
             },
@@ -249,9 +248,9 @@ GET /students?academicYearId=year-uuid&classId=class-uuid&search=adm&page=1&limi
 
 - `401 Unauthorized`: invalid or missing token
 - `403 Forbidden`:
-  - student trying to access another profile
-  - teacher outside allowed student scope
-  - teacher user without teacher profile
+    - student trying to access another profile
+    - teacher outside allowed student scope
+    - teacher user without teacher profile
 - `404 Not Found`: student not found
 
 ---
@@ -337,7 +336,6 @@ Returns updated student profile with nested `user`.
         "name": "6A",
         "gradeLevel": 6,
         "academicYearId": "year-uuid",
-        "classTeacherId": "teacher-profile-uuid",
         "createdAt": "2026-06-01T08:00:00.000Z",
         "updatedAt": "2026-06-20T09:00:00.000Z"
     },
@@ -391,7 +389,6 @@ Returns updated student profile with nested `user`.
             "name": "6A",
             "gradeLevel": 6,
             "academicYearId": "year-uuid",
-            "classTeacherId": "teacher-profile-uuid",
             "createdAt": "2026-06-01T08:00:00.000Z",
             "updatedAt": "2026-06-20T09:00:00.000Z"
         },
@@ -491,7 +488,6 @@ type StudentEnrollment = {
         name: string;
         gradeLevel: number;
         academicYearId: string;
-        classTeacherId: string | null;
         createdAt: string;
         updatedAt: string;
     };

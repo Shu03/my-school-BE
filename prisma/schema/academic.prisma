@@ -43,13 +43,11 @@ model Class {
   name           String
   gradeLevel     Int
   academicYearId String
-  classTeacherId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
   academicYear       AcademicYear             @relation(fields: [academicYearId], references: [id])
-  classTeacher       TeacherProfile?          @relation("ClassTeacher", fields: [classTeacherId], references: [id])
   attendances        Attendance[]
   enrollments        StudentEnrollment[]
   exams              Exam[]

@@ -178,7 +178,6 @@ erDiagram
 
     TeacherProfile }o--o| PermissionPreset : "uses"
     TeacherProfile ||--o{ TeacherClassAssignment : "assigned"
-    TeacherProfile ||--o{ Class : "classTeacher"
 
     StudentProfile ||--o{ StudentEnrollment : "enrolled"
 
@@ -256,7 +255,6 @@ erDiagram
         string name
         int gradeLevel
         uuid academicYearId FK
-        uuid classTeacherId FK
     }
 
     Subject {

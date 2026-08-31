@@ -183,7 +183,6 @@ export class FeesService {
             where: { id: teacherProfileId },
             select: {
                 classAssignments: { select: { classId: true } },
-                classesAsTeacher: { select: { id: true } },
             },
         });
 
@@ -191,10 +190,7 @@ export class FeesService {
             throw new ForbiddenException(ERROR_FEE_TEACHER_PROFILE_NOT_FOUND);
         }
 
-        return [
-            ...teacherProfile.classAssignments.map((assignment) => assignment.classId),
-            ...teacherProfile.classesAsTeacher.map((classRecord) => classRecord.id),
-        ];
+        return [...teacherProfile.classAssignments.map((assignment) => assignment.classId)];
     }
 
     private async assertTeacherHasAccessToStudent(

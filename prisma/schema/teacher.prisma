@@ -25,7 +25,6 @@ model TeacherProfile {
   user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   preset           PermissionPreset?        @relation(fields: [presetId], references: [id])
   attendances      Attendance[]
-  classesAsTeacher Class[]                  @relation("ClassTeacher")
   classAssignments TeacherClassAssignment[]
   examsCreated     Exam[]                   @relation("ExamCreatedBy")
   gradesEntered    Grade[]                  @relation("GradeGradedBy")

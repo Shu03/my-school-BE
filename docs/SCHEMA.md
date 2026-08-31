@@ -144,8 +144,7 @@ Extended profile for users with the TEACHER role.
 
 - `user` → `User` — one-to-one (CASCADE on delete)
 - `preset` → `PermissionPreset?` — optional permission preset
-- `classesAsTeacher` → `Class[]` — classes where this teacher is the class teacher
-- `classAssignments` → `TeacherClassAssignment[]` — subject/class assignments
+- `classAssignments` → `TeacherClassAssignment[]` — subject/class assignments (a `CLASS_TEACHER` row denotes the class teacher)
 
 ##### `TeacherClassAssignment` → `teacher_class_assignments`
 
@@ -246,24 +245,22 @@ Represents a school academic year / session.
 
 A specific class/section within an academic year.
 
-| Field            | Type       | Constraints                | Description               |
-| ---------------- | ---------- | -------------------------- | ------------------------- |
-| `id`             | `String`   | PK, UUID                   | Unique identifier         |
-| `name`           | `String`   | —                          | Class name (e.g., "10-A") |
-| `gradeLevel`     | `Int`      | —                          | Numeric grade (e.g., 10)  |
-| `academicYearId` | `String`   | FK → `academic_years.id`   | Associated academic year  |
-| `classTeacherId` | `String?`  | FK → `teacher_profiles.id` | Assigned class teacher    |
-| `createdAt`      | `DateTime` | Default: `now()`           | Record creation timestamp |
-| `updatedAt`      | `DateTime` | Auto-updated               | Last update timestamp     |
+| Field            | Type       | Constraints              | Description               |
+| ---------------- | ---------- | ------------------------ | ------------------------- |
+| `id`             | `String`   | PK, UUID                 | Unique identifier         |
+| `name`           | `String`   | —                        | Class name (e.g., "10-A") |
+| `gradeLevel`     | `Int`      | —                        | Numeric grade (e.g., 10)  |
+| `academicYearId` | `String`   | FK → `academic_years.id` | Associated academic year  |
+| `createdAt`      | `DateTime` | Default: `now()`         | Record creation timestamp |
+| `updatedAt`      | `DateTime` | Auto-updated             | Last update timestamp     |
 
 **Unique constraint:** `(name, academicYearId)` — unique class name per year  
 **Indexes:** `academicYearId`, `(gradeLevel, academicYearId)`  
 **Relations:**
 
 - `academicYear` → `AcademicYear` — parent year (Restrict on delete)
-- `classTeacher` → `TeacherProfile?` — assigned class teacher (SET NULL on delete)
 - `enrollments` → `StudentEnrollment[]`
-- `teacherAssignments` → `TeacherClassAssignment[]`
+- `teacherAssignments` → `TeacherClassAssignment[]` — a `CLASS_TEACHER` row is the class teacher
 
 ##### `Subject` → `subjects`
 
@@ -319,7 +316,7 @@ A subject offered at a specific grade level.
        │           │  │    assignments)          │
        │           │  └──────┬──────────┬────────┘
        │           │         │          │
-       │           └── ClassTeacher     │
+       │           (CLASS_TEACHER role) │
        │                  │             │
        ├──── 1:1 ────┐    │             │
        │              ▼   ▼             │

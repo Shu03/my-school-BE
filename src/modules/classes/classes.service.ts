@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
+import { TeacherClassRole } from "@prisma/client";
+
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { PrismaService } from "@modules/prisma/prisma.service";
 
 import { ClassBasic, ClassWithRelations } from "./classes.types";
-import { AssignTeacherDto } from "./dto/assign-teacher.dto";
 import { CreateClassDto } from "./dto/create-class.dto";
 import { ListClassesDto } from "./dto/list-classes.dto";
 import { UpdateClassDto } from "./dto/update-class.dto";
@@ -89,7 +90,20 @@ export class ClassesService {
             where: { id },
             include: {
                 academicYear: true,
-                classTeacher: {
+            },
+        });
+
+        if (!classRecord) {
+            throw new NotFoundException("Class not found");
+        }
+
+        const classTeacherAssignment = await this.prismaService.teacherClassAssignment.findFirst({
+            where: {
+                classId: id,
+                role: TeacherClassRole.CLASS_TEACHER,
+            },
+            include: {
+                teacher: {
                     include: {
                         user: {
                             omit: { password: true },
@@ -99,11 +113,7 @@ export class ClassesService {
             },
         });
 
-        if (!classRecord) {
-            throw new NotFoundException("Class not found");
-        }
-
-        return classRecord;
+        return { ...classRecord, classTeacher: classTeacherAssignment?.teacher ?? null };
     }
 
     public async update(id: string, dto: UpdateClassDto): Promise<ClassBasic> {
@@ -129,45 +139,6 @@ export class ClassesService {
                 ...(dto.name !== undefined && { name: dto.name }),
                 ...(dto.gradeLevel !== undefined && { gradeLevel: dto.gradeLevel }),
             },
-        });
-    }
-
-    public async assignTeacher(id: string, dto: AssignTeacherDto): Promise<ClassBasic> {
-        await this.assertClassExists(id);
-
-        const teacher = await this.prismaService.teacherProfile.findUnique({
-            where: { id: dto.teacherId },
-            include: { user: true },
-        });
-
-        if (!teacher) {
-            throw new NotFoundException("Teacher not found");
-        }
-
-        if (!teacher.user.isActive) {
-            throw new BadRequestException("Cannot assign an inactive teacher as class teacher");
-        }
-
-        return this.prismaService.class.update({
-            where: { id },
-            data: { classTeacherId: dto.teacherId },
-        });
-    }
-
-    public async removeTeacher(id: string): Promise<ClassBasic> {
-        await this.assertClassExists(id);
-
-        const classRecord = await this.prismaService.class.findUnique({
-            where: { id },
-        });
-
-        if (!classRecord?.classTeacherId) {
-            throw new BadRequestException("This class has no class teacher assigned");
-        }
-
-        return this.prismaService.class.update({
-            where: { id },
-            data: { classTeacherId: null },
         });
     }
 }

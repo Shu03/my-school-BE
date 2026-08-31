@@ -99,7 +99,6 @@ export class StudentsService {
             where: { userId: teacherUserId },
             select: {
                 classAssignments: { select: { classId: true } },
-                classesAsTeacher: { select: { id: true } },
             },
         });
 
@@ -107,10 +106,7 @@ export class StudentsService {
             throw new ForbiddenException("Teacher profile not found");
         }
 
-        const teacherClassIds = new Set([
-            ...teacherProfile.classAssignments.map((a) => a.classId),
-            ...teacherProfile.classesAsTeacher.map((c) => c.id),
-        ]);
+        const teacherClassIds = new Set([...teacherProfile.classAssignments.map((a) => a.classId)]);
 
         const studentEnrollment = await this.prisma.studentEnrollment.findFirst({
             where: {
@@ -149,13 +145,11 @@ export class StudentsService {
                 where: { userId: requestingUserId },
                 select: {
                     classAssignments: { select: { classId: true } },
-                    classesAsTeacher: { select: { id: true } },
                 },
             });
 
             const teacherClassIds = [
                 ...(teacherProfile?.classAssignments.map((a) => a.classId) ?? []),
-                ...(teacherProfile?.classesAsTeacher.map((c) => c.id) ?? []),
             ];
 
             const classFilter = dto.classId

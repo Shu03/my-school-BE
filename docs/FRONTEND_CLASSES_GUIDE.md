@@ -45,7 +45,6 @@ All endpoints are prefixed with `/classes`.
     "name": "6A",
     "gradeLevel": 6,
     "academicYearId": "year-uuid",
-    "classTeacherId": null,
     "createdAt": "2026-06-22T12:00:00.000Z",
     "updatedAt": "2026-06-22T12:00:00.000Z"
 }
@@ -87,7 +86,6 @@ GET /classes?academicYearId=year-uuid&gradeLevel=6
         "name": "6A",
         "gradeLevel": 6,
         "academicYearId": "year-uuid",
-        "classTeacherId": "teacher-profile-uuid",
         "createdAt": "2026-06-22T12:00:00.000Z",
         "updatedAt": "2026-06-22T12:30:00.000Z"
     }
@@ -112,7 +110,6 @@ GET /classes?academicYearId=year-uuid&gradeLevel=6
     "name": "6A",
     "gradeLevel": 6,
     "academicYearId": "year-uuid",
-    "classTeacherId": "teacher-profile-uuid",
     "createdAt": "2026-06-22T12:00:00.000Z",
     "updatedAt": "2026-06-22T12:30:00.000Z",
     "academicYear": {
@@ -171,61 +168,18 @@ GET /classes?academicYearId=year-uuid&gradeLevel=6
 
 ---
 
-### 5. **Assign Class Teacher**
+### 5. **Class Teacher Assignment**
 
-**Endpoint:** `PATCH /classes/:id/assign-teacher`  
-**Access:** Admin or Teacher with `CLASS_MANAGE` permission  
-**Headers:** `Authorization: Bearer <accessToken>`
+Class-teacher assignment is **not** managed through the Classes API. It is a
+`CLASS_TEACHER` row in the teacher-assignments join table and is the single
+source of truth for "who is the class teacher of this class".
 
-**Request Body:**
+- **Assign:** `POST /teachers/:teacherId/assignments` with `{ "role": "CLASS_TEACHER", "classId": "class-uuid" }`
+- **Remove:** `DELETE /teachers/:teacherId/assignments/:assignmentId`
+- A class can have at most one `CLASS_TEACHER` assignment.
 
-```json
-{
-    "teacherId": "teacher-profile-uuid"
-}
-```
-
-**Validation Rules:**
-
-- `teacherId`: required UUID
-- teacher must exist
-- teacher user must be active
-
-**Response - Success (200 OK):**
-
-```json
-{
-    "id": "class-1",
-    "name": "6A",
-    "gradeLevel": 6,
-    "academicYearId": "year-uuid",
-    "classTeacherId": "teacher-profile-uuid",
-    "createdAt": "2026-06-22T12:00:00.000Z",
-    "updatedAt": "2026-06-22T13:00:00.000Z"
-}
-```
-
-**Error Responses:**
-
-- `400 Bad Request`: teacher is inactive
-- `404 Not Found`: class or teacher not found
-
----
-
-### 6. **Remove Class Teacher**
-
-**Endpoint:** `PATCH /classes/:id/remove-teacher`  
-**Access:** Admin or Teacher with `CLASS_MANAGE` permission  
-**Headers:** `Authorization: Bearer <accessToken>`
-
-**Request Body:** empty
-
-**Response:** updated class object with `classTeacherId: null`.
-
-**Error Responses:**
-
-- `400 Bad Request`: class has no teacher assigned
-- `404 Not Found`: class not found
+See the Teachers frontend guide for details. `GET /classes/:id` still returns
+the resolved `classTeacher` object (derived from that assignment) for display.
 
 ---
 
@@ -237,7 +191,6 @@ type SchoolClass = {
     name: string;
     gradeLevel: number;
     academicYearId: string;
-    classTeacherId: string | null;
     createdAt: string;
     updatedAt: string;
 };
@@ -294,8 +247,5 @@ export const classesApi = {
     getById: (id: string) => api.get(`/classes/${id}`),
     update: (id: string, payload: Partial<{ name: string; gradeLevel: number }>) =>
         api.patch(`/classes/${id}`, payload),
-    assignTeacher: (id: string, teacherId: string) =>
-        api.patch(`/classes/${id}/assign-teacher`, { teacherId }),
-    removeTeacher: (id: string) => api.patch(`/classes/${id}/remove-teacher`),
 };
 ```
