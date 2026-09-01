@@ -7,9 +7,11 @@
 > `my-school-FE/deployment/`.
 
 ## Prerequisites
+
 - BE deployed over HTTPS; `my-school-FE` on GitHub.
 
 ## Deploy
+
 1. Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git**.
 2. Select `my-school-FE`.
 3. Build command: `pnpm build`. Build output directory: `dist`.
@@ -20,25 +22,32 @@
 > needed, set `NODE_VERSION` / add `packageManager` in `package.json`.
 
 ## SPA routing (required)
+
 Add `my-school-FE/public/_redirects`:
+
 ```
 /*    /index.html   200
 ```
+
 This ships in the build output and makes deep links work.
 
 ## Env is build-time
+
 Change `VITE_API_BASE_URL` → **retry deployment** (rebuild).
 
 ## Custom domain + TLS
+
 Add a custom domain in the Pages project → Cloudflare manages DNS + TLS automatically
 (especially easy if the domain is already on Cloudflare). Update BE `CORS_ORIGIN`.
 
 ## Pros / Cons
-| Pros | Cons |
-| ---- | ---- |
+
+| Pros                        | Cons                       |
+| --------------------------- | -------------------------- |
 | Huge free tier, global edge | Needs `_redirects` for SPA |
-| Fast, unlimited requests | Build-time env |
-| Tight DNS/TLS integration | Backend hosted elsewhere |
+| Fast, unlimited requests    | Build-time env             |
+| Tight DNS/TLS integration   | Backend hosted elsewhere   |
 
 ## Cost
+
 - Free tier: **$0**, hard to outgrow for a demo.

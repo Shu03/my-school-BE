@@ -17,12 +17,12 @@ flowchart LR
     BE --> DB[(Neon Postgres<br/>free serverless)]
 ```
 
-| Layer | Variant A1 (cold-start OK) | Variant A2 (always-on) |
-| ----- | -------------------------- | ---------------------- |
-| Database | Neon free | Neon free |
-| Backend | **Render** free web service | **Fly.io** free-allowance machine |
-| Frontend | **Vercel** / Cloudflare Pages | Vercel / Cloudflare Pages |
-| Cost | $0 | $0 (within Fly limits) |
+| Layer     | Variant A1 (cold-start OK)                                  | Variant A2 (always-on)             |
+| --------- | ----------------------------------------------------------- | ---------------------------------- |
+| Database  | Neon free                                                   | Neon free                          |
+| Backend   | **Render** free web service                                 | **Fly.io** free-allowance machine  |
+| Frontend  | **Vercel** / Cloudflare Pages                               | Vercel / Cloudflare Pages          |
+| Cost      | $0                                                          | $0 (within Fly limits)             |
 | Trade-off | BE sleeps after ~15 min idle → first request slow (~30–60s) | Stays warm; small resource ceiling |
 
 ---
@@ -54,17 +54,17 @@ DATABASE_URL="postgresql://...neon..." pnpm prisma:seed
 1. Push `my-school-BE` to GitHub (already done).
 2. Render → **New → Web Service** → connect the repo.
 3. Settings:
-   - **Runtime:** Docker (uses your `Dockerfile`).
-   - **Health Check Path:** `/api/v1/health`.
-   - **Instance Type:** Free.
+    - **Runtime:** Docker (uses your `Dockerfile`).
+    - **Health Check Path:** `/api/v1/health`.
+    - **Instance Type:** Free.
 4. Environment variables (see [Chapter 02](02-environment-variables.md)):
-   ```
-   NODE_ENV=production
-   DATABASE_URL=postgresql://...neon...
-   JWT_ACCESS_SECRET=...
-   JWT_REFRESH_SECRET=...
-   CORS_ORIGIN=https://<your-fe>.vercel.app
-   ```
+    ```
+    NODE_ENV=production
+    DATABASE_URL=postgresql://...neon...
+    JWT_ACCESS_SECRET=...
+    JWT_REFRESH_SECRET=...
+    CORS_ORIGIN=https://<your-fe>.vercel.app
+    ```
 5. Deploy. Note the URL, e.g. `https://my-school-be.onrender.com`.
 6. Verify: `curl https://my-school-be.onrender.com/api/v1/health`.
 
@@ -78,9 +78,9 @@ Full detail: [07-platforms/render.md](07-platforms/render.md).
 1. Push `my-school-FE` to GitHub.
 2. Vercel → **Add New Project** → import the repo (framework auto-detected: Vite).
 3. Environment variable:
-   ```
-   VITE_API_BASE_URL=https://my-school-be.onrender.com/api/v1
-   ```
+    ```
+    VITE_API_BASE_URL=https://my-school-be.onrender.com/api/v1
+    ```
 4. Deploy → note the URL, e.g. `https://my-school-fe.vercel.app`.
 5. Go back to Render and set `CORS_ORIGIN` to that exact URL, then redeploy the BE.
 
@@ -150,14 +150,14 @@ Add a health check + release migration step to `fly.toml`
 
 ## Free-tier gotchas (read before demoing)
 
-| Gotcha | Impact | Mitigation |
-| ------ | ------ | ---------- |
-| Render free sleeps | First request slow after idle | Use A2, or ping `/api/v1/health` every 10 min (e.g. cron-job.org) |
-| Neon autosuspend | First query wakes DB (~1–3s) | Acceptable; or keep-alive ping |
-| Render free DB expires in 30 days | Data loss | Use **Neon**, not Render's DB |
-| Supabase pauses after ~1 wk idle | DB unavailable | Log in weekly, or use Neon |
-| Vite env is build-time | Changing API URL needs rebuild | Redeploy FE after changing `VITE_API_BASE_URL` |
-| CORS mismatch | FE calls fail | Exact origin, no trailing slash, redeploy BE |
+| Gotcha                            | Impact                         | Mitigation                                                        |
+| --------------------------------- | ------------------------------ | ----------------------------------------------------------------- |
+| Render free sleeps                | First request slow after idle  | Use A2, or ping `/api/v1/health` every 10 min (e.g. cron-job.org) |
+| Neon autosuspend                  | First query wakes DB (~1–3s)   | Acceptable; or keep-alive ping                                    |
+| Render free DB expires in 30 days | Data loss                      | Use **Neon**, not Render's DB                                     |
+| Supabase pauses after ~1 wk idle  | DB unavailable                 | Log in weekly, or use Neon                                        |
+| Vite env is build-time            | Changing API URL needs rebuild | Redeploy FE after changing `VITE_API_BASE_URL`                    |
+| CORS mismatch                     | FE calls fail                  | Exact origin, no trailing slash, redeploy BE                      |
 
 > **Tip (keep-alive for A1):** a free scheduler hitting
 > `GET /api/v1/health` every ~10 minutes keeps the Render service and Neon warm during

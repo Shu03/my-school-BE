@@ -41,8 +41,8 @@ Setup:
 
 1. Create an account at neon.tech and a new project (pick a region near your BE host).
 2. Copy the connection string. Neon gives you two:
-   - **Pooled** (`...-pooler.neon.tech`) — use for the app runtime.
-   - **Direct** (`...neon.tech`) — use for migrations.
+    - **Pooled** (`...-pooler.neon.tech`) — use for the app runtime.
+    - **Direct** (`...neon.tech`) — use for migrations.
 3. Set `DATABASE_URL` to the **pooled** string with `?sslmode=require`.
 
 ```bash
@@ -74,13 +74,13 @@ for migrations.
 
 ## Level 2 — Production managed (paid, robust)
 
-| Provider | Service | When |
-| -------- | ------- | ---- |
-| AWS | RDS for PostgreSQL / Aurora Serverless v2 | Already on AWS |
-| Google Cloud | Cloud SQL for PostgreSQL | Already on GCP / using Cloud Run |
-| Azure | Azure Database for PostgreSQL Flexible Server | Already on Azure |
-| Neon / Supabase | Paid tiers | Serverless, branching, low ops |
-| DigitalOcean | Managed Databases | Simple, predictable pricing |
+| Provider        | Service                                       | When                             |
+| --------------- | --------------------------------------------- | -------------------------------- |
+| AWS             | RDS for PostgreSQL / Aurora Serverless v2     | Already on AWS                   |
+| Google Cloud    | Cloud SQL for PostgreSQL                      | Already on GCP / using Cloud Run |
+| Azure           | Azure Database for PostgreSQL Flexible Server | Already on Azure                 |
+| Neon / Supabase | Paid tiers                                    | Serverless, branching, low ops   |
+| DigitalOcean    | Managed Databases                             | Simple, predictable pricing      |
 
 These add automated backups, point-in-time recovery, read replicas, HA failover, and
 private networking.
@@ -97,11 +97,11 @@ Each NestJS instance opens a pool of DB connections (`pg`). Postgres has a hard
 
 Mitigations:
 
-| Situation | Solution |
-| --------- | -------- |
-| Serverless BE + Postgres | Use a pooler (Neon pooler, Supabase pooler, PgBouncer, RDS Proxy) |
-| Few always-on instances | Tune Prisma `connection_limit` in the URL, e.g. `?connection_limit=5` |
-| Migrations behind a pooler | Use a **direct** connection (`directUrl` / `DIRECT_URL`) |
+| Situation                  | Solution                                                              |
+| -------------------------- | --------------------------------------------------------------------- |
+| Serverless BE + Postgres   | Use a pooler (Neon pooler, Supabase pooler, PgBouncer, RDS Proxy)     |
+| Few always-on instances    | Tune Prisma `connection_limit` in the URL, e.g. `?connection_limit=5` |
+| Migrations behind a pooler | Use a **direct** connection (`directUrl` / `DIRECT_URL`)              |
 
 Example tuned URL:
 
@@ -121,12 +121,12 @@ adapter you can usually rely on `sslmode=require` without pinning the CA for a d
 
 ## Backups
 
-| Provider | Default backups |
-| -------- | --------------- |
-| Neon | Point-in-time within retention window (tier-dependent) |
-| Supabase | Daily (paid: PITR) |
-| RDS / Cloud SQL / Azure | Automated daily + PITR (configurable) |
-| Self-hosted VPS | **You must set this up** — see below |
+| Provider                | Default backups                                        |
+| ----------------------- | ------------------------------------------------------ |
+| Neon                    | Point-in-time within retention window (tier-dependent) |
+| Supabase                | Daily (paid: PITR)                                     |
+| RDS / Cloud SQL / Azure | Automated daily + PITR (configurable)                  |
+| Self-hosted VPS         | **You must set this up** — see below                   |
 
 Self-hosted backup (cron):
 

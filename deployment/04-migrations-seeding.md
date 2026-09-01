@@ -10,10 +10,10 @@ are in `prisma/schema/migrations/`. Config is `prisma.config.ts`.
 
 ## The two commands you must not confuse
 
-| Command | Use where | What it does |
-| ------- | --------- | ------------ |
-| `prisma migrate dev` | **local dev only** | Creates a new migration from schema changes, applies it, regenerates client. May reset data. |
-| `prisma migrate deploy` | **CI/CD & production** | Applies existing, committed migrations. Never generates new ones, never resets. Idempotent. |
+| Command                 | Use where              | What it does                                                                                 |
+| ----------------------- | ---------------------- | -------------------------------------------------------------------------------------------- |
+| `prisma migrate dev`    | **local dev only**     | Creates a new migration from schema changes, applies it, regenerates client. May reset data. |
+| `prisma migrate deploy` | **CI/CD & production** | Applies existing, committed migrations. Never generates new ones, never resets. Idempotent.  |
 
 > **Warning:** Never run `migrate dev` against production — it can prompt, create
 > migrations, and in some flows reset the database. Production uses **`migrate deploy`**.
@@ -73,15 +73,15 @@ CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/main"]
 
 Run migrations once, before new instances start, using the platform's release hook:
 
-| Platform | Release hook |
-| -------- | ------------ |
-| Render | `preDeployCommand` in `render.yaml` |
-| Railway | Deploy "pre-deploy command" |
-| Fly.io | `[deploy] release_command` in `fly.toml` |
-| Heroku-style | `release:` process in `Procfile` |
-| Cloud Run | A separate Cloud Run **Job** run in the pipeline |
-| ECS | A one-off task run before service update |
-| Kubernetes | An `initContainer` or a `Job` |
+| Platform     | Release hook                                     |
+| ------------ | ------------------------------------------------ |
+| Render       | `preDeployCommand` in `render.yaml`              |
+| Railway      | Deploy "pre-deploy command"                      |
+| Fly.io       | `[deploy] release_command` in `fly.toml`         |
+| Heroku-style | `release:` process in `Procfile`                 |
+| Cloud Run    | A separate Cloud Run **Job** run in the pipeline |
+| ECS          | A one-off task run before service update         |
+| Kubernetes   | An `initContainer` or a `Job`                    |
 
 Command in all cases:
 
@@ -111,9 +111,11 @@ Idempotent seed pattern (if you adapt the seed):
 
 ```ts
 await prisma.user.upsert({
-  where: { email: "admin@example.com" },
-  update: {},
-  create: { /* ... */ },
+    where: { email: "admin@example.com" },
+    update: {},
+    create: {
+        /* ... */
+    },
 });
 ```
 

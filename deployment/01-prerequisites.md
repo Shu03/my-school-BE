@@ -84,10 +84,7 @@ cannot call the API. Replace it with an allowlist driven by an env var.
 const corsOrigin = configService.get<string>("app.corsOrigin");
 
 app.enableCors({
-    origin:
-        nodeEnv === "production"
-            ? (corsOrigin?.split(",").map((o) => o.trim()) ?? [])
-            : "*",
+    origin: nodeEnv === "production" ? (corsOrigin?.split(",").map((o) => o.trim()) ?? []) : "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -108,7 +105,7 @@ object (not `process.env` directly), so add:
 export const appConfig = registerAs("app", () => ({
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
-    corsOrigin: env.CORS_ORIGIN,   // add this line
+    corsOrigin: env.CORS_ORIGIN, // add this line
 }));
 ```
 
@@ -165,16 +162,16 @@ reverse proxy. No change needed.
 
 ## Part C — Accounts & tooling checklist
 
-| Requirement | Why | Free? |
-| ----------- | --- | ----- |
-| GitHub account + repos pushed | Source for every platform + CI/CD | Yes |
-| A managed Postgres account (e.g. Neon) | Production DB | Yes (free tier) |
-| A BE host account (Render/Fly/Railway/…) | Run the API | Yes (free tier) |
-| A FE host account (Vercel/Netlify/Cloudflare) | Serve the SPA | Yes (free tier) |
-| `pnpm` installed locally | Build/verify locally | Yes |
-| Node.js 22 locally | Match runtime | Yes |
-| Docker Desktop (optional) | Test the Dockerfile locally | Yes |
-| A custom domain (optional) | Nice URLs + stable CORS | ~$10/yr |
+| Requirement                                   | Why                               | Free?           |
+| --------------------------------------------- | --------------------------------- | --------------- |
+| GitHub account + repos pushed                 | Source for every platform + CI/CD | Yes             |
+| A managed Postgres account (e.g. Neon)        | Production DB                     | Yes (free tier) |
+| A BE host account (Render/Fly/Railway/…)      | Run the API                       | Yes (free tier) |
+| A FE host account (Vercel/Netlify/Cloudflare) | Serve the SPA                     | Yes (free tier) |
+| `pnpm` installed locally                      | Build/verify locally              | Yes             |
+| Node.js 22 locally                            | Match runtime                     | Yes             |
+| Docker Desktop (optional)                     | Test the Dockerfile locally       | Yes             |
+| A custom domain (optional)                    | Nice URLs + stable CORS           | ~$10/yr         |
 
 **Local verification before deploying:**
 

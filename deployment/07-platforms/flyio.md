@@ -5,11 +5,13 @@
 > scale.
 
 ## Prerequisites
+
 - [Chapter 01](../01-prerequisites.md) fixes applied (Dockerfile, CORS).
 - `flyctl` installed: `brew install flyctl` (or `curl -L https://fly.io/install.sh | sh`).
 - `fly auth login`.
 
 ## First deploy
+
 ```bash
 # from my-school-BE
 fly launch --no-deploy      # detects Dockerfile, writes fly.toml, pick region near DB
@@ -25,6 +27,7 @@ fly deploy
 App URL: `https://<app>.fly.dev` → API under `/api/v1`.
 
 ## `fly.toml` essentials
+
 ```toml
 app = "my-school-be"
 primary_region = "iad"     # choose near your Neon region
@@ -56,29 +59,34 @@ primary_region = "iad"     # choose near your Neon region
 
 > **Note:** `release_command` runs in a temporary machine before the rollout, so change
 > the Dockerfile `CMD` to just `node dist/main`. Set `auto_stop_machines = true` if you
-> *want* scale-to-zero (cold starts) to save resources.
+> _want_ scale-to-zero (cold starts) to save resources.
 
 ## Migrations
+
 - Handled by `release_command = "pnpm prisma migrate deploy"`.
 - Seed once: `fly ssh console -C "pnpm prisma:seed"` or run locally against Neon.
 
 ## Database
+
 - Use **Neon** (put it in `fly secrets`), or
 - `fly postgres create` for a Fly-managed Postgres (has its own small free-ish tier;
   Neon is simpler to keep free).
 
 ## Health & logs
+
 - Health checks are in `fly.toml` (above).
 - Logs: `fly logs`. Status: `fly status`. Scale: `fly scale count 1`.
 
 ## Pros / Cons
-| Pros | Cons |
-| ---- | ---- |
-| Always-on within free allowance | CLI-first (less clicky) |
-| Global regions, low latency | Must mind memory on 256–512MB VMs |
+
+| Pros                                  | Cons                               |
+| ------------------------------------- | ---------------------------------- |
+| Always-on within free allowance       | CLI-first (less clicky)            |
+| Global regions, low latency           | Must mind memory on 256–512MB VMs  |
 | Native release-command for migrations | Occasional platform learning curve |
-| Real VMs (websockets, long conns) | Free allowance can change |
+| Real VMs (websockets, long conns)     | Free allowance can change          |
 
 ## Cost
+
 - Small always-on `shared-cpu-1x`/256–512MB: typically $0 within the free allowance.
 - Scale out or bump memory → pay per machine/second + egress.

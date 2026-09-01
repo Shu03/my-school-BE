@@ -6,11 +6,11 @@
 
 The platform has two deployable units:
 
-| Unit | Repo | Tech | Artifact | Runtime |
-| ---- | ---- | ---- | -------- | ------- |
-| **Backend (BE)** | `my-school-BE` | NestJS 11 + Prisma 7 | `dist/` Node server | Long-running Node process |
-| **Frontend (FE)** | `my-school-FE` | React 19 + Vite 8 | `dist/` static files | Static host / CDN |
-| **Database** | — | PostgreSQL 16 | Managed instance | Always-on |
+| Unit              | Repo           | Tech                 | Artifact             | Runtime                   |
+| ----------------- | -------------- | -------------------- | -------------------- | ------------------------- |
+| **Backend (BE)**  | `my-school-BE` | NestJS 11 + Prisma 7 | `dist/` Node server  | Long-running Node process |
+| **Frontend (FE)** | `my-school-FE` | React 19 + Vite 8    | `dist/` static files | Static host / CDN         |
+| **Database**      | —              | PostgreSQL 16        | Managed instance     | Always-on                 |
 
 The FE guide lives in `my-school-FE/deployment/`. This BE guide is the source of
 truth for the API, database, and migrations; it cross-links to the FE where relevant.
@@ -22,22 +22,22 @@ truth for the API, database, and migrations; it cross-links to the FE where rele
 Read top-to-bottom the first time. Each chapter goes **small → big**: it starts with
 the simplest possible action, then layers on production concerns.
 
-| # | Chapter | Read when |
-| - | ------- | --------- |
-| [00](00-overview.md) | Architecture overview | Always first |
-| [01](01-prerequisites.md) | Prerequisites & required code fixes | **Before any deploy** |
-| [02](02-environment-variables.md) | Environment variables reference | Setting up any environment |
-| [03](03-database.md) | Database providers & setup | Provisioning Postgres |
-| [04](04-migrations-seeding.md) | Migrations & seeding | Every release |
-| [05](05-repo-strategy.md) | Repo strategy (mono vs separate) | Deciding structure |
-| [06](06-free-tier.md) | Free-tier deployment (recommended) | Demo / MVP |
-| [07](07-platforms/) | Every platform, step-by-step | Choosing a host |
-| [08](08-cicd.md) | CI/CD with GitHub Actions | Automating deploys |
-| [09](09-secrets-config.md) | Secrets management | Handling credentials |
-| [10](10-post-deploy-checklist.md) | Post-deploy checklist | After first deploy |
-| [11](11-monitoring-logging.md) | Monitoring & logging | Going live |
-| [12](12-cost-comparison.md) | Cost comparison | Budgeting |
-| [13](13-troubleshooting.md) | Troubleshooting | When things break |
+| #                                 | Chapter                             | Read when                  |
+| --------------------------------- | ----------------------------------- | -------------------------- |
+| [00](00-overview.md)              | Architecture overview               | Always first               |
+| [01](01-prerequisites.md)         | Prerequisites & required code fixes | **Before any deploy**      |
+| [02](02-environment-variables.md) | Environment variables reference     | Setting up any environment |
+| [03](03-database.md)              | Database providers & setup          | Provisioning Postgres      |
+| [04](04-migrations-seeding.md)    | Migrations & seeding                | Every release              |
+| [05](05-repo-strategy.md)         | Repo strategy (mono vs separate)    | Deciding structure         |
+| [06](06-free-tier.md)             | Free-tier deployment (recommended)  | Demo / MVP                 |
+| [07](07-platforms/)               | Every platform, step-by-step        | Choosing a host            |
+| [08](08-cicd.md)                  | CI/CD with GitHub Actions           | Automating deploys         |
+| [09](09-secrets-config.md)        | Secrets management                  | Handling credentials       |
+| [10](10-post-deploy-checklist.md) | Post-deploy checklist               | After first deploy         |
+| [11](11-monitoring-logging.md)    | Monitoring & logging                | Going live                 |
+| [12](12-cost-comparison.md)       | Cost comparison                     | Budgeting                  |
+| [13](13-troubleshooting.md)       | Troubleshooting                     | When things break          |
 
 ---
 

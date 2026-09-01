@@ -20,19 +20,19 @@ Three independent pieces, deployed and scaled separately:
 
 ## Backend runtime facts (verified from the codebase)
 
-| Property | Value | Source |
-| -------- | ----- | ------ |
-| Framework | NestJS 11 | `package.json` |
-| ORM | Prisma 7 (`@prisma/client`, `@prisma/adapter-pg`) | `package.json` |
-| Node build output | `dist/main.js` | `nest build` |
-| Start command | `node dist/main` (via `pnpm start:prod`) | `package.json` scripts |
-| Listen port | `PORT` env, default `3000` | `src/main.ts` |
-| Global route prefix | `api/v1` | `src/main.ts` |
-| Health endpoint | `GET /api/v1/health` | `src/main.ts`, health module |
-| API docs (Swagger) | `GET /api/docs` — **disabled when `NODE_ENV=production`** | `src/main.ts` |
-| Security headers | `helmet()` enabled | `src/main.ts` |
-| Proxy trust | `trust proxy = 1` (works behind a reverse proxy/LB) | `src/main.ts` |
-| Package manager | **pnpm** (`pnpm-lock.yaml`) | repo |
+| Property            | Value                                                     | Source                       |
+| ------------------- | --------------------------------------------------------- | ---------------------------- |
+| Framework           | NestJS 11                                                 | `package.json`               |
+| ORM                 | Prisma 7 (`@prisma/client`, `@prisma/adapter-pg`)         | `package.json`               |
+| Node build output   | `dist/main.js`                                            | `nest build`                 |
+| Start command       | `node dist/main` (via `pnpm start:prod`)                  | `package.json` scripts       |
+| Listen port         | `PORT` env, default `3000`                                | `src/main.ts`                |
+| Global route prefix | `api/v1`                                                  | `src/main.ts`                |
+| Health endpoint     | `GET /api/v1/health`                                      | `src/main.ts`, health module |
+| API docs (Swagger)  | `GET /api/docs` — **disabled when `NODE_ENV=production`** | `src/main.ts`                |
+| Security headers    | `helmet()` enabled                                        | `src/main.ts`                |
+| Proxy trust         | `trust proxy = 1` (works behind a reverse proxy/LB)       | `src/main.ts`                |
+| Package manager     | **pnpm** (`pnpm-lock.yaml`)                               | repo                         |
 
 ## Request flow in production
 
@@ -43,19 +43,19 @@ Three independent pieces, deployed and scaled separately:
 
 ## What each environment needs
 
-| Environment | FE | BE | DB |
-| ----------- | -- | -- | -- |
-| Local dev | `vite` dev server (`:5173`) | `nest start --watch` (`:3000`) | Docker Postgres (`docker-compose.yml`) |
-| Preview/staging | Preview deploy | Preview service | Branch DB or shared staging DB |
-| Production | CDN static host | Always-on Node service | Managed Postgres |
+| Environment     | FE                          | BE                             | DB                                     |
+| --------------- | --------------------------- | ------------------------------ | -------------------------------------- |
+| Local dev       | `vite` dev server (`:5173`) | `nest start --watch` (`:3000`) | Docker Postgres (`docker-compose.yml`) |
+| Preview/staging | Preview deploy              | Preview service                | Branch DB or shared staging DB         |
+| Production      | CDN static host             | Always-on Node service         | Managed Postgres                       |
 
 ## Networking & domains (typical)
 
-| Piece | Example URL |
-| ----- | ----------- |
-| FE | `https://app.example.com` |
-| BE | `https://api.example.com` (serves under `/api/v1`) |
-| Swagger | Not exposed in production |
+| Piece   | Example URL                                        |
+| ------- | -------------------------------------------------- |
+| FE      | `https://app.example.com`                          |
+| BE      | `https://api.example.com` (serves under `/api/v1`) |
+| Swagger | Not exposed in production                          |
 
 > **Note:** The FE talks to the BE **from the user's browser**, so the BE must be
 > reachable on the public internet and must allow the FE's origin via CORS. Putting

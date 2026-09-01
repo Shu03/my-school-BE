@@ -7,15 +7,15 @@ tracking, and metrics as the app matters more.
 
 ## Level 0 — Platform logs (free, built-in)
 
-| Platform | Live logs |
-| -------- | --------- |
-| Render | Dashboard → service → Logs |
-| Railway | Deployments → Logs |
-| Fly.io | `fly logs` |
+| Platform  | Live logs                                       |
+| --------- | ----------------------------------------------- |
+| Render    | Dashboard → service → Logs                      |
+| Railway   | Deployments → Logs                              |
+| Fly.io    | `fly logs`                                      |
 | Cloud Run | `gcloud run services logs read` / Cloud Logging |
-| AWS ECS | CloudWatch Logs |
-| Azure ACA | `az containerapp logs show` / Log Analytics |
-| VPS | `docker compose logs -f api` |
+| AWS ECS   | CloudWatch Logs                                 |
+| Azure ACA | `az containerapp logs show` / Log Analytics     |
+| VPS       | `docker compose logs -f api`                    |
 
 The app uses NestJS's built-in `Logger` (see `src/main.ts`). Logs go to stdout, which
 every platform captures. **Keep logging to stdout/stderr** — don't write log files in
@@ -46,10 +46,12 @@ Capture exceptions with stack traces and context.
 - Alternatives: GlitchTip (open-source Sentry-compatible), Highlight, Rollbar.
 
 Sketch (implement later):
+
 ```ts
 import * as Sentry from "@sentry/node";
 Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV });
 ```
+
 Then report from the exception filter's catch path. Add `SENTRY_DSN` as a secret.
 
 > **Note:** `SENTRY_DSN` is not currently a validated env var. If you adopt Sentry, add
@@ -72,19 +74,20 @@ Then report from the exception filter's catch path. Add `SENTRY_DSN` as a secret
 
 ## What to watch (demo → production)
 
-| Signal | Why | Where |
-| ------ | --- | ----- |
-| Health check status | Is the API alive | Uptime monitor |
-| 5xx rate | Broken deploy / bug | Error tracker / logs |
-| p95 latency | Cold starts, slow queries | Platform metrics / APM |
-| DB connections | Pool exhaustion risk | DB dashboard |
-| DB storage | Free-tier limits | DB dashboard |
-| Memory usage | OOM on small VMs (Fly 256MB) | Platform metrics |
-| Cold-start frequency | Demo UX | Logs / uptime latency |
+| Signal               | Why                          | Where                  |
+| -------------------- | ---------------------------- | ---------------------- |
+| Health check status  | Is the API alive             | Uptime monitor         |
+| 5xx rate             | Broken deploy / bug          | Error tracker / logs   |
+| p95 latency          | Cold starts, slow queries    | Platform metrics / APM |
+| DB connections       | Pool exhaustion risk         | DB dashboard           |
+| DB storage           | Free-tier limits             | DB dashboard           |
+| Memory usage         | OOM on small VMs (Fly 256MB) | Platform metrics       |
+| Cold-start frequency | Demo UX                      | Logs / uptime latency  |
 
 ---
 
 ## Recommended minimal setup for a demo
+
 1. Platform logs (free, already on).
 2. UptimeRobot on `/api/v1/health` (free) + keep-alive on sleeping hosts.
 3. Sentry free tier for backend errors.

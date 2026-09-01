@@ -14,12 +14,14 @@ my-school-FE/   → deploys to the static host
 ```
 
 **Pros**
+
 - Independent deploys and rollbacks (ship FE without touching BE).
 - Simpler CI: each repo's pipeline only builds one thing.
 - Cleaner access control and smaller clones.
 - Matches how the hosts think (FE host watches FE repo, API host watches BE repo).
 
 **Cons**
+
 - Cross-cutting changes (e.g. an API contract change) span two PRs.
 - No shared types package unless you publish one.
 - Two sets of CI config to maintain.
@@ -41,11 +43,13 @@ my-school/
 ```
 
 **Pros**
+
 - One PR can change API + client together (atomic contract changes).
 - Share a `packages/shared` type package between BE and FE.
 - Single source of truth, one CI config, one issue tracker.
 
 **Cons**
+
 - Requires restructuring both existing repos + git history decisions.
 - CI must build **only what changed** (path filters) or you rebuild everything.
 - Some hosts need a configured "root directory" to find each app.
@@ -58,23 +62,23 @@ my-school/
 
 Every platform supports monorepos via a **root/base directory** setting:
 
-| Platform | Setting |
-| -------- | ------- |
-| Render | "Root Directory" per service (`apps/api`, `apps/web`) |
-| Railway | Service "Root Directory" |
-| Vercel | Project "Root Directory" = `apps/web` |
-| Netlify | "Base directory" = `apps/web` |
-| Fly.io | `fly.toml` in `apps/api`, run `fly deploy` from there |
-| Cloud Run / ECS | Docker build context set to the app subfolder |
+| Platform        | Setting                                               |
+| --------------- | ----------------------------------------------------- |
+| Render          | "Root Directory" per service (`apps/api`, `apps/web`) |
+| Railway         | Service "Root Directory"                              |
+| Vercel          | Project "Root Directory" = `apps/web`                 |
+| Netlify         | "Base directory" = `apps/web`                         |
+| Fly.io          | `fly.toml` in `apps/api`, run `fly deploy` from there |
+| Cloud Run / ECS | Docker build context set to the app subfolder         |
 
 **pnpm workspace** `package.json` (root):
 
 ```json
 {
-  "name": "my-school",
-  "private": true,
-  "packageManager": "pnpm@9",
-  "workspaces": ["apps/*", "packages/*"]
+    "name": "my-school",
+    "private": true,
+    "packageManager": "pnpm@9",
+    "workspaces": ["apps/*", "packages/*"]
 }
 ```
 
