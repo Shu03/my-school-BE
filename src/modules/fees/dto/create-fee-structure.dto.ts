@@ -6,7 +6,7 @@ export class CreateFeeStructureDto {
     @ApiProperty({ example: 5 })
     @IsInt()
     @Min(1)
-    public gradeLevel!: number;
+    public classLevel!: number;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

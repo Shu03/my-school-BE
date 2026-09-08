@@ -9,9 +9,9 @@ export class PromoteStudentsDto {
     @IsUUID("4", { each: true })
     public studentIds!: string[];
 
-    @ApiProperty({ example: "uuid-of-target-class" })
+    @ApiProperty({ example: "uuid-of-target-section" })
     @IsUUID()
-    public targetClassId!: string;
+    public targetSectionId!: string;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

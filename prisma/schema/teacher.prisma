@@ -41,18 +41,18 @@ enum TeacherClassRole {
 model TeacherClassAssignment {
   id        String           @id @default(uuid())
   teacherId String
-  classId   String
+  sectionId String
   subjectId String?
   role      TeacherClassRole
   createdAt DateTime         @default(now())
 
   // Relations
   teacher TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  class   Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  section Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   subject Subject?       @relation(fields: [subjectId], references: [id])
 
-  @@unique([teacherId, classId, subjectId])
-  @@index([classId])
+  @@unique([teacherId, sectionId, subjectId])
+  @@index([sectionId])
   @@index([teacherId])
   @@map("teacher_class_assignments")
 }

@@ -4,10 +4,10 @@ import { Transform } from "class-transformer";
 import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 
 export class EnrollStudentDto {
-    @ApiProperty({ example: "uuid-of-class" })
+    @ApiProperty({ example: "uuid-of-section" })
     @IsUUID()
     @IsNotEmpty()
-    public classId!: string;
+    public sectionId!: string;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

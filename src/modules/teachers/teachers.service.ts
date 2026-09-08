@@ -74,7 +74,7 @@ export class TeachersService {
         const assignment = await this.prisma.teacherClassAssignment.findUnique({
             where: { id: assignmentId },
             include: {
-                class: true,
+                section: true,
                 subject: true,
             },
         });
@@ -202,7 +202,7 @@ export class TeachersService {
                 preset: true,
                 classAssignments: {
                     include: {
-                        class: true,
+                        section: true,
                         subject: true,
                     },
                 },
@@ -322,13 +322,13 @@ export class TeachersService {
             throw new BadRequestException("subjectId must not be provided for CLASS_TEACHER role");
         }
 
-        // Validate class exists
-        const classRecord = await this.prisma.class.findUnique({
-            where: { id: dto.classId },
+        // Validate section exists
+        const classRecord = await this.prisma.section.findUnique({
+            where: { id: dto.sectionId },
         });
 
         if (!classRecord) {
-            throw new NotFoundException("Class not found");
+            throw new NotFoundException("Section not found");
         }
 
         // Validate subject exists and grade level matches
@@ -341,36 +341,36 @@ export class TeachersService {
                 throw new NotFoundException("Subject not found");
             }
 
-            if (subject.gradeLevel !== classRecord.gradeLevel) {
+            if (subject.classLevel !== classRecord.classLevel) {
                 throw new BadRequestException(
-                    `Subject grade level (${subject.gradeLevel}) does not match class grade level (${classRecord.gradeLevel})`,
+                    `Subject class level (${subject.classLevel}) does not match section class level (${classRecord.classLevel})`,
                 );
             }
         }
 
-        // Validate no duplicate CLASS_TEACHER assignment for this class
+        // Validate no duplicate CLASS_TEACHER assignment for this section
         if (dto.role === "CLASS_TEACHER") {
             const existingClassTeacher = await this.prisma.teacherClassAssignment.findFirst({
                 where: {
-                    classId: dto.classId,
+                    sectionId: dto.sectionId,
                     role: "CLASS_TEACHER",
                 },
             });
 
             if (existingClassTeacher) {
-                throw new BadRequestException("This class already has a class teacher assigned");
+                throw new BadRequestException("This section already has a class teacher assigned");
             }
         }
 
         return this.prisma.teacherClassAssignment.create({
             data: {
                 teacherId,
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 subjectId: dto.subjectId ?? null,
                 role: dto.role,
             },
             include: {
-                class: true,
+                section: true,
                 subject: true,
             },
         });
@@ -390,10 +390,10 @@ export class TeachersService {
         return this.prisma.teacherClassAssignment.findMany({
             where: { teacherId },
             include: {
-                class: true,
+                section: true,
                 subject: true,
             },
-            orderBy: [{ class: { gradeLevel: "asc" } }, { class: { name: "asc" } }],
+            orderBy: [{ section: { classLevel: "asc" } }, { section: { name: "asc" } }],
         });
     }
 

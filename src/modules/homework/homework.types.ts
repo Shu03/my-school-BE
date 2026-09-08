@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 export type HomeworkBasic = Prisma.HomeworkGetPayload<{
     include: {
-        class: true;
+        section: true;
         subject: true;
         createdBy: {
             include: {

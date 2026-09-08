@@ -21,7 +21,7 @@ export class CreateSubjectDto {
     @ApiProperty({ example: 6 })
     @IsInt()
     @Min(1)
-    public gradeLevel!: number;
+    public classLevel!: number;
 
     @ApiPropertyOptional({ example: "Core mathematics for grade 6" })
     @Transform(({ value }: { value: string }) => value?.trim())

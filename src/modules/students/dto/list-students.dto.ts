@@ -6,10 +6,10 @@ import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from "class-
 import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "@common/constants";
 
 export class ListStudentsDto {
-    @ApiPropertyOptional({ example: "uuid-of-class" })
+    @ApiPropertyOptional({ example: "uuid-of-section" })
     @IsUUID()
     @IsOptional()
-    public classId?: string;
+    public sectionId?: string;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

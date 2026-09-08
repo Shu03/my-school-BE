@@ -7,7 +7,7 @@ export class CreateAssignmentDto {
     @ApiProperty({ example: "uuid-of-class" })
     @IsUUID()
     @IsNotEmpty()
-    public classId!: string;
+    public sectionId!: string;
 
     @ApiProperty({ enum: TeacherClassRole, example: TeacherClassRole.SUBJECT_TEACHER })
     @IsEnum(TeacherClassRole)

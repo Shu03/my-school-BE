@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 export type ExamBasic = Prisma.ExamGetPayload<{
     include: {
-        class: true;
+        section: true;
         academicYear: true;
         examSubjects: {
             include: {

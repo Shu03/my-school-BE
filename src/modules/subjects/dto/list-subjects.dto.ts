@@ -9,7 +9,7 @@ export class ListSubjectsDto {
     @Min(1)
     @IsOptional()
     @Transform(({ value }: { value: string }) => parseInt(value, 10))
-    public gradeLevel?: number;
+    public classLevel?: number;
 
     @ApiPropertyOptional({ example: "Math" })
     @Transform(({ value }: { value: string }) => value?.trim())

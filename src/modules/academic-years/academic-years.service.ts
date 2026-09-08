@@ -58,23 +58,23 @@ export class AcademicYearsService {
         await this.assertNameNotTaken(dto.name);
         this.assertValidDateRange(dto.startDate, dto.endDate);
 
-        const classesToCopy: { name: string; gradeLevel: number }[] = [];
+        const classesToCopy: { name: string; classLevel: number }[] = [];
 
         if (dto.copyClassStructureFromCurrent) {
             const currentYear = await this.prisma.academicYear.findFirst({
                 where: { isCurrent: true },
                 include: {
-                    classes: {
+                    sections: {
                         select: {
                             name: true,
-                            gradeLevel: true,
+                            classLevel: true,
                         },
                     },
                 },
             });
 
             if (currentYear) {
-                classesToCopy.push(...currentYear.classes);
+                classesToCopy.push(...currentYear.sections);
             }
         }
 
@@ -84,10 +84,10 @@ export class AcademicYearsService {
                 startDate: new Date(dto.startDate),
                 endDate: new Date(dto.endDate),
                 ...(classesToCopy.length > 0 && {
-                    classes: {
+                    sections: {
                         create: classesToCopy.map((cls) => ({
                             name: cls.name,
-                            gradeLevel: cls.gradeLevel,
+                            classLevel: cls.classLevel,
                         })),
                     },
                 }),

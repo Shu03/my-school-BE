@@ -2,7 +2,7 @@ model Homework {
   id             String   @id @default(uuid())
   title          String
   description    String
-  classId        String
+  sectionId      String
   subjectId      String
   academicYearId String
   dueDate        DateTime @db.Date
@@ -10,12 +10,12 @@ model Homework {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  class        Class           @relation(fields: [classId], references: [id])
+  section      Section         @relation(fields: [sectionId], references: [id])
   subject      Subject         @relation(fields: [subjectId], references: [id])
   academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
   createdBy    TeacherProfile? @relation("HomeworkCreatedBy", fields: [createdById], references: [id])
 
-  @@index([classId, academicYearId])
+  @@index([sectionId, academicYearId])
   @@index([subjectId])
   @@index([dueDate])
   @@map("homework")

@@ -6,7 +6,7 @@ enum FeeRecordStatus {
 
 model FeeStructure {
   id             String   @id @default(uuid())
-  gradeLevel     Int
+  classLevel     Int
   academicYearId String
   totalAmount    Float
   dueDate        DateTime @db.Date
@@ -16,7 +16,7 @@ model FeeStructure {
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
   feeRecords   FeeRecord[]
 
-  @@unique([gradeLevel, academicYearId])
+  @@unique([classLevel, academicYearId])
   @@index([academicYearId])
   @@map("fee_structures")
 }

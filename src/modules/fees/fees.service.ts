@@ -182,7 +182,7 @@ export class FeesService {
         const teacherProfile = await this.prisma.teacherProfile.findUnique({
             where: { id: teacherProfileId },
             select: {
-                classAssignments: { select: { classId: true } },
+                classAssignments: { select: { sectionId: true } },
             },
         });
 
@@ -190,7 +190,7 @@ export class FeesService {
             throw new ForbiddenException(ERROR_FEE_TEACHER_PROFILE_NOT_FOUND);
         }
 
-        return [...teacherProfile.classAssignments.map((assignment) => assignment.classId)];
+        return [...teacherProfile.classAssignments.map((assignment) => assignment.sectionId)];
     }
 
     private async assertTeacherHasAccessToStudent(
@@ -203,7 +203,7 @@ export class FeesService {
             where: {
                 studentId,
                 status: EnrollmentStatus.ACTIVE,
-                classId: { in: teacherClassIds },
+                sectionId: { in: teacherClassIds },
             },
             select: { id: true },
         });
@@ -253,7 +253,7 @@ export class FeesService {
         try {
             return await this.prisma.feeStructure.create({
                 data: {
-                    gradeLevel: dto.gradeLevel,
+                    classLevel: dto.classLevel,
                     academicYearId,
                     totalAmount: dto.totalAmount,
                     dueDate: new Date(dto.dueDate),
@@ -263,7 +263,7 @@ export class FeesService {
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
                 throw new BadRequestException(
-                    ERROR_FEE_STRUCTURE_ALREADY_EXISTS.replace("%s", String(dto.gradeLevel)),
+                    ERROR_FEE_STRUCTURE_ALREADY_EXISTS.replace("%s", String(dto.classLevel)),
                 );
             }
             throw error;
@@ -276,7 +276,7 @@ export class FeesService {
         return this.prisma.feeStructure.findMany({
             where: { academicYearId },
             include: FEE_STRUCTURE_INCLUDE,
-            orderBy: { gradeLevel: "asc" },
+            orderBy: { classLevel: "asc" },
         });
     }
 
@@ -304,25 +304,25 @@ export class FeesService {
 
     public async generateFeeRecordForStudent(
         studentId: string,
-        classId: string,
+        sectionId: string,
         academicYearId: string,
     ): Promise<void> {
-        const classRecord = await this.prisma.class.findUnique({
-            where: { id: classId },
-            select: { gradeLevel: true },
+        const classRecord = await this.prisma.section.findUnique({
+            where: { id: sectionId },
+            select: { classLevel: true },
         });
 
         if (!classRecord) {
             this.logger.warn(
-                `Cannot generate fee record: class ${classId} not found for student ${studentId}`,
+                `Cannot generate fee record: section ${sectionId} not found for student ${studentId}`,
             );
             return;
         }
 
         const structure = await this.prisma.feeStructure.findUnique({
             where: {
-                gradeLevel_academicYearId: {
-                    gradeLevel: classRecord.gradeLevel,
+                classLevel_academicYearId: {
+                    classLevel: classRecord.classLevel,
                     academicYearId,
                 },
             },
@@ -330,7 +330,7 @@ export class FeesService {
 
         if (!structure) {
             this.logger.warn(
-                `No fee structure for grade ${classRecord.gradeLevel} in academic year ` +
+                `No fee structure for class ${classRecord.classLevel} in academic year ` +
                     `${academicYearId}; skipping fee record for student ${studentId}`,
             );
             return;
@@ -363,7 +363,7 @@ export class FeesService {
                 status: EnrollmentStatus.ACTIVE,
             },
             include: {
-                class: { select: { gradeLevel: true } },
+                section: { select: { classLevel: true } },
             },
         });
 
@@ -387,8 +387,8 @@ export class FeesService {
 
             const structure = await this.prisma.feeStructure.findUnique({
                 where: {
-                    gradeLevel_academicYearId: {
-                        gradeLevel: enrollment.class.gradeLevel,
+                    classLevel_academicYearId: {
+                        classLevel: enrollment.section.classLevel,
                         academicYearId,
                     },
                 },
@@ -402,7 +402,7 @@ export class FeesService {
 
             await this.generateFeeRecordForStudent(
                 enrollment.studentId,
-                enrollment.classId,
+                enrollment.sectionId,
                 academicYearId,
             );
             created++;
@@ -431,31 +431,31 @@ export class FeesService {
             this.assertTeacherHasFeesPermission(requestingUser);
 
             const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-            const teacherClassIds = await this.getTeacherClassIds(teacherProfileId);
+            const teacherSectionIds = await this.getTeacherClassIds(teacherProfileId);
 
-            const classFilter =
-                dto.classId !== undefined
-                    ? teacherClassIds.includes(dto.classId)
-                        ? [dto.classId]
+            const sectionFilter =
+                dto.sectionId !== undefined
+                    ? teacherSectionIds.includes(dto.sectionId)
+                        ? [dto.sectionId]
                         : []
-                    : teacherClassIds;
+                    : teacherSectionIds;
 
             where.student = {
                 enrollments: {
                     some: {
                         academicYearId,
                         status: EnrollmentStatus.ACTIVE,
-                        classId: { in: classFilter },
+                        sectionId: { in: sectionFilter },
                     },
                 },
             };
-        } else if (dto.classId !== undefined) {
+        } else if (dto.sectionId !== undefined) {
             where.student = {
                 enrollments: {
                     some: {
                         academicYearId,
                         status: EnrollmentStatus.ACTIVE,
-                        classId: dto.classId,
+                        sectionId: dto.sectionId,
                     },
                 },
             };

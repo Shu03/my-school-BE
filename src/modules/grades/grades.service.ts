@@ -79,12 +79,12 @@ export class GradesService {
 
     private async assertTeacherAssignedToExamSubject(
         userId: string,
-        classId: string,
+        sectionId: string,
         subjectId: string,
     ): Promise<void> {
         const assignment = await this.prismaService.teacherClassAssignment.findFirst({
             where: {
-                classId,
+                sectionId,
                 teacher: { userId },
                 OR: [{ subjectId }, { subjectId: null }],
             },
@@ -104,12 +104,12 @@ export class GradesService {
 
     private async assertStudentsEnrolledInExamClass(
         studentIds: string[],
-        classId: string,
+        sectionId: string,
         academicYearId: string,
     ): Promise<void> {
         const enrollments = await this.prismaService.studentEnrollment.findMany({
             where: {
-                classId,
+                sectionId,
                 academicYearId,
                 status: EnrollmentStatus.ACTIVE,
                 studentId: { in: studentIds },
@@ -155,7 +155,7 @@ export class GradesService {
             gradedById = await this.resolveTeacherProfileId(requestingUser.sub);
             await this.assertTeacherAssignedToExamSubject(
                 requestingUser.sub,
-                exam.classId,
+                exam.sectionId,
                 subjectId,
             );
         }
@@ -165,7 +165,11 @@ export class GradesService {
         }
 
         const studentIds = dto.records.map((record) => record.studentId);
-        await this.assertStudentsEnrolledInExamClass(studentIds, exam.classId, exam.academicYearId);
+        await this.assertStudentsEnrolledInExamClass(
+            studentIds,
+            exam.sectionId,
+            exam.academicYearId,
+        );
 
         await this.prismaService.$transaction([
             this.prismaService.grade.deleteMany({
@@ -197,7 +201,11 @@ export class GradesService {
             throw new ForbiddenException(ERROR_GRADE_INSUFFICIENT_PERMISSIONS);
         }
 
-        await this.assertTeacherAssignedToExamSubject(requestingUser.sub, exam.classId, subjectId);
+        await this.assertTeacherAssignedToExamSubject(
+            requestingUser.sub,
+            exam.sectionId,
+            subjectId,
+        );
     }
 
     public async getExamSubjectGrades(
@@ -303,7 +311,7 @@ export class GradesService {
             const assignment = await this.prismaService.teacherClassAssignment.findFirst({
                 where: {
                     teacher: { userId: requestingUser.sub },
-                    class: {
+                    section: {
                         enrollments: {
                             some: {
                                 studentId,

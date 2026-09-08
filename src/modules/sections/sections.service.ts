@@ -5,20 +5,20 @@ import { TeacherClassRole } from "@prisma/client";
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { PrismaService } from "@modules/prisma/prisma.service";
 
-import { ClassBasic, ClassWithRelations } from "./classes.types";
-import { CreateClassDto } from "./dto/create-class.dto";
-import { ListClassesDto } from "./dto/list-classes.dto";
-import { UpdateClassDto } from "./dto/update-class.dto";
+import { CreateSectionDto } from "./dto/create-section.dto";
+import { ListSectionsDto } from "./dto/list-sections.dto";
+import { UpdateSectionDto } from "./dto/update-section.dto";
+import { SectionBasic, SectionWithRelations } from "./sections.types";
 
 @Injectable()
-export class ClassesService {
+export class SectionsService {
     public constructor(
         private readonly prismaService: PrismaService,
         private readonly academicYearService: AcademicYearsService,
     ) {}
 
     private async assertClassExists(classId: string): Promise<void> {
-        const classExists = await this.prismaService.class.findUnique({
+        const classExists = await this.prismaService.section.findUnique({
             where: { id: classId },
         });
 
@@ -32,7 +32,7 @@ export class ClassesService {
         academicYearId: string,
         excludeId?: string,
     ): Promise<void> {
-        const existing = await this.prismaService.class.findUnique({
+        const existing = await this.prismaService.section.findUnique({
             where: {
                 name_academicYearId: {
                     name,
@@ -46,7 +46,7 @@ export class ClassesService {
         }
     }
 
-    public async create(dto: CreateClassDto): Promise<ClassBasic> {
+    public async create(dto: CreateSectionDto): Promise<SectionBasic> {
         // Get academicYearId — use provided or default to current year
         let academicYearId = dto.academicYearId;
 
@@ -57,16 +57,16 @@ export class ClassesService {
 
         await this.assertClassNameNotTaken(dto.name, academicYearId);
 
-        return this.prismaService.class.create({
+        return this.prismaService.section.create({
             data: {
                 name: dto.name,
-                gradeLevel: dto.gradeLevel,
+                classLevel: dto.classLevel,
                 academicYearId,
             },
         });
     }
 
-    public async findAll(dto: ListClassesDto): Promise<ClassBasic[]> {
+    public async findAll(dto: ListSectionsDto): Promise<SectionBasic[]> {
         let academicYearId = dto.academicYearId;
 
         if (!academicYearId) {
@@ -74,19 +74,19 @@ export class ClassesService {
             academicYearId = currentYear.id;
         }
 
-        return this.prismaService.class.findMany({
+        return this.prismaService.section.findMany({
             where: {
                 academicYearId,
-                ...(dto.gradeLevel !== undefined && {
-                    gradeLevel: dto.gradeLevel,
+                ...(dto.classLevel !== undefined && {
+                    classLevel: dto.classLevel,
                 }),
             },
-            orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+            orderBy: [{ classLevel: "asc" }, { name: "asc" }],
         });
     }
 
-    public async findOne(id: string): Promise<ClassWithRelations> {
-        const classRecord = await this.prismaService.class.findUnique({
+    public async findOne(id: string): Promise<SectionWithRelations> {
+        const classRecord = await this.prismaService.section.findUnique({
             where: { id },
             include: {
                 academicYear: true,
@@ -99,7 +99,7 @@ export class ClassesService {
 
         const classTeacherAssignment = await this.prismaService.teacherClassAssignment.findFirst({
             where: {
-                classId: id,
+                sectionId: id,
                 role: TeacherClassRole.CLASS_TEACHER,
             },
             include: {
@@ -116,12 +116,12 @@ export class ClassesService {
         return { ...classRecord, classTeacher: classTeacherAssignment?.teacher ?? null };
     }
 
-    public async update(id: string, dto: UpdateClassDto): Promise<ClassBasic> {
-        if (dto.name === undefined && dto.gradeLevel === undefined) {
-            throw new BadRequestException("Name or gradeLevel fields must be provided to update");
+    public async update(id: string, dto: UpdateSectionDto): Promise<SectionBasic> {
+        if (dto.name === undefined && dto.classLevel === undefined) {
+            throw new BadRequestException("Name or classLevel fields must be provided to update");
         }
 
-        const existing = await this.prismaService.class.findUnique({
+        const existing = await this.prismaService.section.findUnique({
             where: { id },
         });
 
@@ -133,11 +133,11 @@ export class ClassesService {
             await this.assertClassNameNotTaken(dto.name, existing.academicYearId, id);
         }
 
-        return this.prismaService.class.update({
+        return this.prismaService.section.update({
             where: { id },
             data: {
                 ...(dto.name !== undefined && { name: dto.name }),
-                ...(dto.gradeLevel !== undefined && { gradeLevel: dto.gradeLevel }),
+                ...(dto.classLevel !== undefined && { classLevel: dto.classLevel }),
             },
         });
     }

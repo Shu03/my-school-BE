@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 import { Transform } from "class-transformer";
-import { IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { IsDateString, IsNotEmpty, IsString, MaxLength } from "class-validator";
 
 export class CreateAnnouncementDto {
     @ApiProperty({ example: "School reopens on Monday" })
@@ -17,4 +17,12 @@ export class CreateAnnouncementDto {
     @IsNotEmpty()
     @MaxLength(5000)
     public content!: string;
+
+    @ApiProperty({ example: "2026-09-08T00:00:00.000Z" })
+    @IsDateString()
+    public startDate!: string;
+
+    @ApiProperty({ example: "2026-09-15T00:00:00.000Z" })
+    @IsDateString()
+    public endDate!: string;
 }

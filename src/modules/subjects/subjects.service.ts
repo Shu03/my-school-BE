@@ -23,50 +23,50 @@ export class SubjectsService {
 
     private async assertNameNotTaken(
         name: string,
-        gradeLevel: number,
+        classLevel: number,
         excludeId?: string,
     ): Promise<void> {
         const existing = await this.prisma.subject.findUnique({
             where: {
-                name_gradeLevel: { name, gradeLevel },
+                name_classLevel: { name, classLevel },
             },
         });
 
         if (existing && existing.id !== excludeId) {
             throw new BadRequestException(
-                `Subject "${name}" already exists for grade ${gradeLevel}`,
+                `Subject "${name}" already exists for class ${classLevel}`,
             );
         }
     }
 
     private async assertCodeNotTaken(
         code: string,
-        gradeLevel: number,
+        classLevel: number,
         excludeId?: string,
     ): Promise<void> {
         const existing = await this.prisma.subject.findUnique({
             where: {
-                code_gradeLevel: { code, gradeLevel },
+                code_classLevel: { code, classLevel },
             },
         });
 
         if (existing && existing.id !== excludeId) {
             throw new BadRequestException(
-                `Subject code "${code}" already exists for grade ${gradeLevel}`,
+                `Subject code "${code}" already exists for class ${classLevel}`,
             );
         }
     }
 
     /** Creating the subject */
     public async create(dto: CreateSubjectDto): Promise<SubjectBasic> {
-        await this.assertNameNotTaken(dto.name, dto.gradeLevel);
-        await this.assertCodeNotTaken(dto.code, dto.gradeLevel);
+        await this.assertNameNotTaken(dto.name, dto.classLevel);
+        await this.assertCodeNotTaken(dto.code, dto.classLevel);
 
         return this.prisma.subject.create({
             data: {
                 name: dto.name,
                 code: dto.code,
-                gradeLevel: dto.gradeLevel,
+                classLevel: dto.classLevel,
                 description: dto.description,
             },
         });
@@ -76,8 +76,8 @@ export class SubjectsService {
     public async findAll(dto: ListSubjectsDto): Promise<SubjectBasic[]> {
         return this.prisma.subject.findMany({
             where: {
-                ...(dto.gradeLevel !== undefined && {
-                    gradeLevel: dto.gradeLevel,
+                ...(dto.classLevel !== undefined && {
+                    classLevel: dto.classLevel,
                 }),
                 ...(dto.search !== undefined && {
                     name: {
@@ -86,7 +86,7 @@ export class SubjectsService {
                     },
                 }),
             },
-            orderBy: [{ gradeLevel: "asc" }, { name: "asc" }],
+            orderBy: [{ classLevel: "asc" }, { name: "asc" }],
         });
     }
 
@@ -104,7 +104,7 @@ export class SubjectsService {
                                 },
                             },
                         },
-                        class: true,
+                        section: true,
                     },
                 },
             },
@@ -134,11 +134,11 @@ export class SubjectsService {
         }
 
         if (dto.name !== undefined) {
-            await this.assertNameNotTaken(dto.name, existing.gradeLevel, id);
+            await this.assertNameNotTaken(dto.name, existing.classLevel, id);
         }
 
         if (dto.code !== undefined) {
-            await this.assertCodeNotTaken(dto.code, existing.gradeLevel, id);
+            await this.assertCodeNotTaken(dto.code, existing.classLevel, id);
         }
 
         return this.prisma.subject.update({

@@ -8,7 +8,7 @@ model AcademicYear {
   updatedAt DateTime @updatedAt
 
   // Relations
-  classes       Class[]
+  sections      Section[]
   enrollments   StudentEnrollment[]
   exams         Exam[]
   holidays      Holiday[]
@@ -38,10 +38,10 @@ model Term {
   @@map("terms")
 }
 
-model Class {
+model Section {
   id             String   @id @default(uuid())
   name           String
-  gradeLevel     Int
+  classLevel     Int
   academicYearId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -56,15 +56,15 @@ model Class {
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
-  @@index([gradeLevel, academicYearId])
-  @@map("classes")
+  @@index([classLevel, academicYearId])
+  @@map("sections")
 }
 
 model Subject {
   id          String   @id @default(uuid())
   name        String
   code        String
-  gradeLevel  Int
+  classLevel  Int
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -74,9 +74,9 @@ model Subject {
   teacherAssignments TeacherClassAssignment[]
   homework           Homework[]
 
-  @@unique([name, gradeLevel])
-  @@unique([code, gradeLevel])
-  @@index([gradeLevel])
+  @@unique([name, classLevel])
+  @@unique([code, classLevel])
+  @@index([classLevel])
   @@map("subjects")
 }
 

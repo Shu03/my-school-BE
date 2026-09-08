@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 import { Transform } from "class-transformer";
-import { IsOptional, IsString, MaxLength } from "class-validator";
+import { IsDateString, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class UpdateAnnouncementDto {
     @ApiPropertyOptional({ example: "School reopens on Monday" })
@@ -17,4 +17,14 @@ export class UpdateAnnouncementDto {
     @MaxLength(5000)
     @IsOptional()
     public content?: string;
+
+    @ApiPropertyOptional({ example: "2026-09-08T00:00:00.000Z" })
+    @IsDateString()
+    @IsOptional()
+    public startDate?: string;
+
+    @ApiPropertyOptional({ example: "2026-09-15T00:00:00.000Z" })
+    @IsDateString()
+    @IsOptional()
+    public endDate?: string;
 }

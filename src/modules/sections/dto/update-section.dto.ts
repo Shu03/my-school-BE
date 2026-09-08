@@ -3,7 +3,7 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from "class-validator";
 
-export class UpdateClassDto {
+export class UpdateSectionDto {
     @ApiPropertyOptional({ example: "6B" })
     @Transform(({ value }: { value: string }) => value?.trim())
     @IsString()
@@ -16,5 +16,5 @@ export class UpdateClassDto {
     @IsInt()
     @Min(1)
     @IsOptional()
-    public gradeLevel?: number;
+    public classLevel?: number;
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
-import { Prisma, Role } from "@prisma/client";
+import { Prisma, Role, User } from "@prisma/client";
 
 import { generateTempPassword, hashPassword } from "@common/utils";
 
@@ -50,13 +50,21 @@ export class UsersService {
         }
     }
 
-    private async assertUserExists(id: string): Promise<void> {
+    private async assertUserExists(id: string): Promise<User> {
         const existing = await this.prisma.user.findUnique({
             where: { id },
         });
 
         if (!existing) {
             throw new NotFoundException(`User not found`);
+        }
+
+        return existing;
+    }
+
+    private assertUserActive(user: User): void {
+        if (!user.isActive) {
+            throw new BadRequestException(`User must be activated to perform this operation`);
         }
     }
 
@@ -220,7 +228,8 @@ export class UsersService {
     }
 
     public async update(id: string, dto: UpdateUserDto): Promise<UserWithoutPassword> {
-        await this.assertUserExists(id);
+        const user = await this.assertUserExists(id);
+        this.assertUserActive(user);
 
         return this.prisma.user.update({
             where: { id },
@@ -234,7 +243,8 @@ export class UsersService {
     }
 
     public async deactivate(id: string): Promise<UserWithoutPassword> {
-        await this.assertUserExists(id);
+        const user = await this.assertUserExists(id);
+        this.assertUserActive(user);
 
         return this.prisma.user.update({
             where: { id },

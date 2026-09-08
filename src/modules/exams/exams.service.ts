@@ -40,7 +40,7 @@ import { UpdateExamDto } from "./dto/update-exam.dto";
 import { ExamBasic, ExamSubjectBasic, ExamSubjectSummary, ExamWithSummary } from "./exams.types";
 
 const EXAM_INCLUDE = {
-    class: true,
+    section: true,
     academicYear: true,
     examSubjects: {
         include: { subject: true },
@@ -132,10 +132,10 @@ export class ExamsService {
         return profile.id;
     }
 
-    private async assertIsClassTeacherOfClass(classId: string, userId: string): Promise<void> {
+    private async assertIsClassTeacherOfClass(sectionId: string, userId: string): Promise<void> {
         const assignment = await this.prismaService.teacherClassAssignment.findFirst({
             where: {
-                classId,
+                sectionId,
                 role: TeacherClassRole.CLASS_TEACHER,
                 teacher: { userId },
             },
@@ -149,16 +149,16 @@ export class ExamsService {
 
     private async assertSubjectMatchesClassGrade(
         subjectId: string,
-        classId: string,
+        sectionId: string,
     ): Promise<void> {
         const [subject, classRecord] = await Promise.all([
             this.prismaService.subject.findUnique({
                 where: { id: subjectId },
-                select: { gradeLevel: true },
+                select: { classLevel: true },
             }),
-            this.prismaService.class.findUnique({
-                where: { id: classId },
-                select: { gradeLevel: true },
+            this.prismaService.section.findUnique({
+                where: { id: sectionId },
+                select: { classLevel: true },
             }),
         ]);
 
@@ -167,10 +167,10 @@ export class ExamsService {
         }
 
         if (!classRecord) {
-            throw new NotFoundException("Class not found");
+            throw new NotFoundException("Section not found");
         }
 
-        if (subject.gradeLevel !== classRecord.gradeLevel) {
+        if (subject.classLevel !== classRecord.classLevel) {
             throw new BadRequestException(ERROR_EXAM_SUBJECT_GRADE_MISMATCH);
         }
     }
@@ -187,10 +187,10 @@ export class ExamsService {
 
     private async assertSubjectsMatchClassGrade(
         subjects: ExamSubjectInputDto[],
-        classId: string,
+        sectionId: string,
     ): Promise<void> {
         for (const subject of subjects) {
-            await this.assertSubjectMatchesClassGrade(subject.subjectId, classId);
+            await this.assertSubjectMatchesClassGrade(subject.subjectId, sectionId);
         }
     }
 
@@ -214,11 +214,11 @@ export class ExamsService {
 
         if (requestingUser.role === Role.TEACHER) {
             createdById = await this.resolveTeacherProfileId(requestingUser.sub);
-            await this.assertIsClassTeacherOfClass(dto.classId, requestingUser.sub);
+            await this.assertIsClassTeacherOfClass(dto.sectionId, requestingUser.sub);
         }
 
         this.assertNoDuplicateSubjects(dto.subjects.map((subject) => subject.subjectId));
-        await this.assertSubjectsMatchClassGrade(dto.subjects, dto.classId);
+        await this.assertSubjectsMatchClassGrade(dto.subjects, dto.sectionId);
 
         let academicYearId = dto.academicYearId;
 
@@ -235,7 +235,7 @@ export class ExamsService {
             data: {
                 name: dto.name,
                 type: dto.type,
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 academicYearId,
                 createdById,
                 ...(dto.termId !== undefined && { termId: dto.termId }),
@@ -268,7 +268,7 @@ export class ExamsService {
         const where: Prisma.ExamWhereInput = {
             academicYearId,
             status: dto.status ?? ExamStatus.ACTIVE,
-            ...(dto.classId !== undefined && { classId: dto.classId }),
+            ...(dto.sectionId !== undefined && { sectionId: dto.sectionId }),
             ...(dto.subjectId !== undefined && {
                 examSubjects: { some: { subjectId: dto.subjectId } },
             }),
@@ -280,13 +280,13 @@ export class ExamsService {
                 throw new ForbiddenException(ERROR_EXAM_INSUFFICIENT_PERMISSIONS);
             }
 
-            where.class = {
+            where.section = {
                 teacherAssignments: {
                     some: { teacher: { userId: requestingUser.sub } },
                 },
             };
         } else if (requestingUser.role === Role.STUDENT) {
-            where.class = {
+            where.section = {
                 enrollments: {
                     some: {
                         academicYearId,
@@ -321,7 +321,7 @@ export class ExamsService {
 
             const assignment = await this.prismaService.teacherClassAssignment.findFirst({
                 where: {
-                    classId: exam.classId,
+                    sectionId: exam.sectionId,
                     teacher: { userId: requestingUser.sub },
                 },
                 select: { id: true },
@@ -333,7 +333,7 @@ export class ExamsService {
         } else if (requestingUser.role === Role.STUDENT) {
             const enrollment = await this.prismaService.studentEnrollment.findFirst({
                 where: {
-                    classId: exam.classId,
+                    sectionId: exam.sectionId,
                     academicYearId: exam.academicYearId,
                     status: EnrollmentStatus.ACTIVE,
                     student: { userId: requestingUser.sub },
@@ -422,7 +422,7 @@ export class ExamsService {
             throw new BadRequestException(ERROR_EXAM_SUBJECT_ALREADY_EXISTS);
         }
 
-        await this.assertSubjectMatchesClassGrade(dto.subjectId, exam.classId);
+        await this.assertSubjectMatchesClassGrade(dto.subjectId, exam.sectionId);
 
         await this.prismaService.examSubject.create({
             data: {

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-export type ClassBasic = Prisma.ClassGetPayload<object>;
+export type SectionBasic = Prisma.SectionGetPayload<object>;
 
 type ClassTeacherProfile = Prisma.TeacherProfileGetPayload<{
     include: {
@@ -10,7 +10,7 @@ type ClassTeacherProfile = Prisma.TeacherProfileGetPayload<{
     };
 }>;
 
-export type ClassWithRelations = Prisma.ClassGetPayload<{
+export type SectionWithRelations = Prisma.SectionGetPayload<{
     include: {
         academicYear: true;
     };

@@ -1,8 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
 import { AcademicYearsService } from "@modules/academic-years";
-import { ClassesService } from "@modules/classes";
+import { FeesService } from "@modules/fees";
 import { PrismaService } from "@modules/prisma";
+import { SectionsService } from "@modules/sections";
 
 import { StudentsService } from "./students.service";
 
@@ -15,7 +16,8 @@ describe("StudentsService", () => {
                 StudentsService,
                 { provide: PrismaService, useValue: {} },
                 { provide: AcademicYearsService, useValue: {} },
-                { provide: ClassesService, useValue: {} },
+                { provide: SectionsService, useValue: {} },
+                { provide: FeesService, useValue: {} },
             ],
         }).compile();
 

@@ -81,12 +81,12 @@ export class AttendanceService {
 
     private async assertTeacherAssignedToClass(
         teacherProfileId: string,
-        classId: string,
+        sectionId: string,
     ): Promise<void> {
         const assignment = await this.prisma.teacherClassAssignment.findFirst({
             where: {
                 teacherId: teacherProfileId,
-                classId,
+                sectionId,
             },
         });
 
@@ -96,12 +96,12 @@ export class AttendanceService {
     }
 
     private async getActiveEnrollments(
-        classId: string,
+        sectionId: string,
         academicYearId: string,
     ): Promise<StudentEnrollment[]> {
         return this.prisma.studentEnrollment.findMany({
             where: {
-                classId,
+                sectionId,
                 academicYearId,
                 status: EnrollmentStatus.ACTIVE,
             },
@@ -135,7 +135,7 @@ export class AttendanceService {
         const sharedAssignment = await this.prisma.teacherClassAssignment.findFirst({
             where: {
                 teacherId: teacherProfileId,
-                class: {
+                section: {
                     enrollments: {
                         some: { studentId },
                     },
@@ -194,11 +194,11 @@ export class AttendanceService {
                 throw new ForbiddenException(ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS);
             }
 
-            await this.assertTeacherAssignedToClass(teacherProfileId, dto.classId);
+            await this.assertTeacherAssignedToClass(teacherProfileId, dto.sectionId);
             markedById = teacherProfileId;
         }
 
-        const enrollments = await this.getActiveEnrollments(dto.classId, academicYearId);
+        const enrollments = await this.getActiveEnrollments(dto.sectionId, academicYearId);
         const enrolledStudentIds = new Set(enrollments.map((enrollment) => enrollment.studentId));
         const recordStudentIds = dto.records.map((record) => record.studentId);
 
@@ -215,7 +215,7 @@ export class AttendanceService {
         await this.prisma.$transaction([
             this.prisma.attendance.deleteMany({
                 where: {
-                    classId: dto.classId,
+                    sectionId: dto.sectionId,
                     date,
                     studentId: { in: recordStudentIds },
                 },
@@ -223,7 +223,7 @@ export class AttendanceService {
             this.prisma.attendance.createMany({
                 data: dto.records.map((record) => ({
                     studentId: record.studentId,
-                    classId: dto.classId,
+                    sectionId: dto.sectionId,
                     academicYearId,
                     date,
                     status: record.status,
@@ -235,14 +235,14 @@ export class AttendanceService {
         return {
             marked: dto.records.length,
             date: dto.date,
-            classId: dto.classId,
+            sectionId: dto.sectionId,
         };
     }
 
     public async getClassAttendance(dto: GetAttendanceDto): Promise<AttendanceRecord[]> {
         return this.prisma.attendance.findMany({
             where: {
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 date: new Date(dto.date),
             },
             include: {
@@ -299,8 +299,8 @@ export class AttendanceService {
     }
 
     public async getSummary(dto: GetAttendanceSummaryDto): Promise<AttendanceSummaryItem[]> {
-        const classRecord = await this.prisma.class.findUnique({
-            where: { id: dto.classId },
+        const classRecord = await this.prisma.section.findUnique({
+            where: { id: dto.sectionId },
         });
 
         if (!classRecord) {
@@ -315,7 +315,7 @@ export class AttendanceService {
 
         const enrollments = await this.prisma.studentEnrollment.findMany({
             where: {
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 academicYearId,
                 status: EnrollmentStatus.ACTIVE,
             },
@@ -332,7 +332,7 @@ export class AttendanceService {
 
         const attendances = await this.prisma.attendance.findMany({
             where: {
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 date: { gte: monthStart, lte: monthEnd },
             },
         });

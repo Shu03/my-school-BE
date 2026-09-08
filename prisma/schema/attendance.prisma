@@ -6,7 +6,7 @@ enum AttendanceStatus {
 model Attendance {
   id             String           @id @default(uuid())
   studentId      String
-  classId        String
+  sectionId      String
   academicYearId String
   date           DateTime         @db.Date
   status         AttendanceStatus
@@ -16,11 +16,11 @@ model Attendance {
   updatedAt      DateTime         @updatedAt
 
   student  StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class    Class           @relation(fields: [classId], references: [id])
+  section  Section         @relation(fields: [sectionId], references: [id])
   markedBy TeacherProfile? @relation(fields: [markedById], references: [id])
 
   @@unique([studentId, date, periodId])
-  @@index([classId, date])
+  @@index([sectionId, date])
   @@index([studentId, academicYearId])
   @@map("attendance")
 }

@@ -19,7 +19,7 @@ export type TeacherProfileWithAssignments = Prisma.TeacherProfileGetPayload<{
         preset: true;
         classAssignments: {
             include: {
-                class: true;
+                section: true;
                 subject: true;
             };
         };
@@ -28,7 +28,7 @@ export type TeacherProfileWithAssignments = Prisma.TeacherProfileGetPayload<{
 
 export type AssignmentBasic = Prisma.TeacherClassAssignmentGetPayload<{
     include: {
-        class: true;
+        section: true;
         subject: true;
     };
 }>;

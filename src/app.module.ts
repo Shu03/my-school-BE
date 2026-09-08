@@ -20,12 +20,12 @@ import { AcademicYearsModule } from "./modules/academic-years/academic-years.mod
 import { AnnouncementsModule } from "./modules/announcements/announcements.module";
 import { AttendanceModule } from "./modules/attendance/attendance.module";
 import { AuthModule } from "./modules/auth/auth.module";
-import { ClassesModule } from "./modules/classes/classes.module";
 import { ExamsModule } from "./modules/exams/exams.module";
 import { FeesModule } from "./modules/fees/fees.module";
 import { GradesModule } from "./modules/grades/grades.module";
 import { HomeworkModule } from "./modules/homework/homework.module";
 import { SchoolModule } from "./modules/school/school.module";
+import { SectionsModule } from "./modules/sections/sections.module";
 import { StudentsModule } from "./modules/students/students.module";
 import { SubjectsModule } from "./modules/subjects/subjects.module";
 import { TeachersModule } from "./modules/teachers/teachers.module";
@@ -45,7 +45,7 @@ import { UsersModule } from "./modules/users/users.module";
         UsersModule,
         AuthModule,
         AcademicYearsModule,
-        ClassesModule,
+        SectionsModule,
         SubjectsModule,
         TeachersModule,
         StudentsModule,

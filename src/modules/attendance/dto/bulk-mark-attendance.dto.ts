@@ -25,7 +25,7 @@ export class AttendanceRecordDto {
 export class BulkMarkAttendanceDto {
     @ApiProperty({ example: "uuid-of-class" })
     @IsUUID()
-    public classId!: string;
+    public sectionId!: string;
 
     @ApiProperty({ example: "2026-06-27" })
     @IsISO8601({ strict: true })

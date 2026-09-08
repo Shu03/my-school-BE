@@ -30,7 +30,7 @@ import { UpdateHomeworkDto } from "./dto/update-homework.dto";
 import { HomeworkBasic } from "./homework.types";
 
 const HOMEWORK_INCLUDE = {
-    class: true,
+    section: true,
     subject: true,
     createdBy: {
         include: {
@@ -65,16 +65,16 @@ export class HomeworkService {
 
     private async assertSubjectMatchesClassGrade(
         subjectId: string,
-        classId: string,
+        sectionId: string,
     ): Promise<void> {
         const [subject, classRecord] = await Promise.all([
             this.prismaService.subject.findUnique({
                 where: { id: subjectId },
-                select: { gradeLevel: true },
+                select: { classLevel: true },
             }),
-            this.prismaService.class.findUnique({
-                where: { id: classId },
-                select: { gradeLevel: true },
+            this.prismaService.section.findUnique({
+                where: { id: sectionId },
+                select: { classLevel: true },
             }),
         ]);
 
@@ -83,22 +83,22 @@ export class HomeworkService {
         }
 
         if (!classRecord) {
-            throw new NotFoundException("Class not found");
+            throw new NotFoundException("Section not found");
         }
 
-        if (subject.gradeLevel !== classRecord.gradeLevel) {
+        if (subject.classLevel !== classRecord.classLevel) {
             throw new BadRequestException(ERROR_HOMEWORK_SUBJECT_GRADE_MISMATCH);
         }
     }
 
     private async assertTeacherAssignedToSubjectClass(
         userId: string,
-        classId: string,
+        sectionId: string,
         subjectId: string,
     ): Promise<void> {
         const assignment = await this.prismaService.teacherClassAssignment.findFirst({
             where: {
-                classId,
+                sectionId,
                 teacher: { userId },
                 OR: [{ subjectId }, { subjectId: null }],
             },
@@ -157,7 +157,7 @@ export class HomeworkService {
             academicYearId = currentYear.id;
         }
 
-        await this.assertSubjectMatchesClassGrade(dto.subjectId, dto.classId);
+        await this.assertSubjectMatchesClassGrade(dto.subjectId, dto.sectionId);
 
         let createdById: string | null = null;
 
@@ -169,7 +169,7 @@ export class HomeworkService {
             createdById = await this.resolveTeacherProfileId(requestingUser.sub);
             await this.assertTeacherAssignedToSubjectClass(
                 requestingUser.sub,
-                dto.classId,
+                dto.sectionId,
                 dto.subjectId,
             );
         }
@@ -178,7 +178,7 @@ export class HomeworkService {
             data: {
                 title: dto.title,
                 description: dto.description,
-                classId: dto.classId,
+                sectionId: dto.sectionId,
                 subjectId: dto.subjectId,
                 academicYearId,
                 dueDate: new Date(dto.dueDate),
@@ -201,18 +201,18 @@ export class HomeworkService {
 
         const where: Prisma.HomeworkWhereInput = {
             academicYearId,
-            ...(dto.classId !== undefined && { classId: dto.classId }),
+            ...(dto.sectionId !== undefined && { sectionId: dto.sectionId }),
             ...(dto.subjectId !== undefined && { subjectId: dto.subjectId }),
         };
 
         if (requestingUser.role === Role.TEACHER) {
-            where.class = {
+            where.section = {
                 teacherAssignments: {
                     some: { teacher: { userId: requestingUser.sub } },
                 },
             };
         } else if (requestingUser.role === Role.STUDENT) {
-            where.class = {
+            where.section = {
                 enrollments: {
                     some: {
                         academicYearId,
@@ -236,7 +236,7 @@ export class HomeworkService {
         if (requestingUser.role === Role.TEACHER) {
             const assignment = await this.prismaService.teacherClassAssignment.findFirst({
                 where: {
-                    classId: homework.classId,
+                    sectionId: homework.sectionId,
                     teacher: { userId: requestingUser.sub },
                 },
                 select: { id: true },
@@ -248,7 +248,7 @@ export class HomeworkService {
         } else if (requestingUser.role === Role.STUDENT) {
             const enrollment = await this.prismaService.studentEnrollment.findFirst({
                 where: {
-                    classId: homework.classId,
+                    sectionId: homework.sectionId,
                     academicYearId: homework.academicYearId,
                     status: EnrollmentStatus.ACTIVE,
                     student: { userId: requestingUser.sub },

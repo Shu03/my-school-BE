@@ -16,7 +16,7 @@ model Exam {
   id             String     @id @default(uuid())
   name           String
   type           ExamType
-  classId        String
+  sectionId      String
   academicYearId String
   termId         String?
   isFinalized    Boolean    @default(false)
@@ -25,13 +25,13 @@ model Exam {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  class        Class           @relation(fields: [classId], references: [id])
+  section      Section         @relation(fields: [sectionId], references: [id])
   academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
   term         Term?           @relation(fields: [termId], references: [id])
   createdBy    TeacherProfile? @relation("ExamCreatedBy", fields: [createdById], references: [id])
   examSubjects ExamSubject[]
 
-  @@index([classId, academicYearId])
+  @@index([sectionId, academicYearId])
   @@map("exams")
 }
 

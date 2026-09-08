@@ -13,7 +13,7 @@ export type SubjectWithAssignments = Prisma.SubjectGetPayload<{
                         };
                     };
                 };
-                class: true;
+                section: true;
             };
         };
     };

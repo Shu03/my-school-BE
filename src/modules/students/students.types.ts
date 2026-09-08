@@ -15,7 +15,7 @@ export type StudentWithEnrollment = Prisma.StudentProfileGetPayload<{
         };
         enrollments: {
             include: {
-                class: true;
+                section: true;
                 academicYear: true;
             };
         };
@@ -24,7 +24,7 @@ export type StudentWithEnrollment = Prisma.StudentProfileGetPayload<{
 
 export type EnrollmentBasic = Prisma.StudentEnrollmentGetPayload<{
     include: {
-        class: true;
+        section: true;
         academicYear: true;
     };
 }>;

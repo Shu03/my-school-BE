@@ -12,9 +12,9 @@ import { EnrollmentStatus, Prisma, Role } from "@prisma/client";
 import { ROLL_NUMBER_PAD_WIDTH } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years";
-import { ClassesService } from "@modules/classes";
 import { FeesService } from "@modules/fees";
 import { PrismaService } from "@modules/prisma";
+import { SectionsService } from "@modules/sections";
 
 import {
     EnrollStudentDto,
@@ -37,7 +37,7 @@ export class StudentsService {
     public constructor(
         private readonly prisma: PrismaService,
         private readonly academicYearsService: AcademicYearsService,
-        private readonly classesService: ClassesService,
+        private readonly sectionsService: SectionsService,
         private readonly feesService: FeesService,
     ) {}
 
@@ -67,7 +67,7 @@ export class StudentsService {
         const enrollment = await this.prisma.studentEnrollment.findFirst({
             where: { id: enrollmentId, studentId },
             include: {
-                class: true,
+                section: true,
                 academicYear: true,
             },
         });
@@ -79,10 +79,10 @@ export class StudentsService {
         return enrollment;
     }
 
-    private async generateRollNumber(classId: string, academicYearId: string): Promise<string> {
+    private async generateRollNumber(sectionId: string, academicYearId: string): Promise<string> {
         const count = await this.prisma.studentEnrollment.count({
             where: {
-                classId,
+                sectionId,
                 academicYearId,
                 status: EnrollmentStatus.ACTIVE,
             },
@@ -98,7 +98,7 @@ export class StudentsService {
         const teacherProfile = await this.prisma.teacherProfile.findUnique({
             where: { userId: teacherUserId },
             select: {
-                classAssignments: { select: { classId: true } },
+                classAssignments: { select: { sectionId: true } },
             },
         });
 
@@ -106,13 +106,15 @@ export class StudentsService {
             throw new ForbiddenException("Teacher profile not found");
         }
 
-        const teacherClassIds = new Set([...teacherProfile.classAssignments.map((a) => a.classId)]);
+        const teacherSectionIds = new Set([
+            ...teacherProfile.classAssignments.map((a) => a.sectionId),
+        ]);
 
         const studentEnrollment = await this.prisma.studentEnrollment.findFirst({
             where: {
                 studentId,
                 status: EnrollmentStatus.ACTIVE,
-                classId: { in: [...teacherClassIds] },
+                sectionId: { in: [...teacherSectionIds] },
             },
         });
 
@@ -144,25 +146,25 @@ export class StudentsService {
             const teacherProfile = await this.prisma.teacherProfile.findUnique({
                 where: { userId: requestingUserId },
                 select: {
-                    classAssignments: { select: { classId: true } },
+                    classAssignments: { select: { sectionId: true } },
                 },
             });
 
-            const teacherClassIds = [
-                ...(teacherProfile?.classAssignments.map((a) => a.classId) ?? []),
+            const teacherSectionIds = [
+                ...(teacherProfile?.classAssignments.map((a) => a.sectionId) ?? []),
             ];
 
-            const classFilter = dto.classId
-                ? teacherClassIds.includes(dto.classId)
-                    ? [dto.classId]
+            const sectionFilter = dto.sectionId
+                ? teacherSectionIds.includes(dto.sectionId)
+                    ? [dto.sectionId]
                     : []
-                : teacherClassIds;
+                : teacherSectionIds;
 
             where = {
                 enrollments: {
                     some: {
                         academicYearId,
-                        classId: { in: classFilter },
+                        sectionId: { in: sectionFilter },
                         status: EnrollmentStatus.ACTIVE,
                     },
                 },
@@ -170,11 +172,11 @@ export class StudentsService {
         } else {
             // ADMIN
             where = {
-                ...(dto.classId !== undefined && {
+                ...(dto.sectionId !== undefined && {
                     enrollments: {
                         some: {
                             academicYearId,
-                            classId: dto.classId,
+                            sectionId: dto.sectionId,
                             status: EnrollmentStatus.ACTIVE,
                         },
                     },
@@ -245,7 +247,7 @@ export class StudentsService {
                 },
                 enrollments: {
                     include: {
-                        class: true,
+                        section: true,
                         academicYear: true,
                     },
                     orderBy: { createdAt: "desc" },
@@ -304,24 +306,24 @@ export class StudentsService {
             academicYearId = current.id;
         }
 
-        const targetClass = await this.classesService.findOne(dto.classId);
-        if (targetClass.academicYearId !== academicYearId) {
-            throw new BadRequestException("Class does not belong to the specified academic year");
+        const targetSection = await this.sectionsService.findOne(dto.sectionId);
+        if (targetSection.academicYearId !== academicYearId) {
+            throw new BadRequestException("Section does not belong to the specified academic year");
         }
 
         const rollNumber =
-            dto.rollNumber ?? (await this.generateRollNumber(dto.classId, academicYearId));
+            dto.rollNumber ?? (await this.generateRollNumber(dto.sectionId, academicYearId));
 
         try {
             const enrollment = await this.prisma.studentEnrollment.create({
                 data: {
                     studentId,
-                    classId: dto.classId,
+                    sectionId: dto.sectionId,
                     academicYearId,
                     rollNumber,
                 },
                 include: {
-                    class: true,
+                    section: true,
                     academicYear: true,
                 },
             });
@@ -329,7 +331,7 @@ export class StudentsService {
             try {
                 await this.feesService.generateFeeRecordForStudent(
                     studentId,
-                    dto.classId,
+                    dto.sectionId,
                     academicYearId,
                 );
             } catch (feeError) {
@@ -361,7 +363,7 @@ export class StudentsService {
         return this.prisma.studentEnrollment.findMany({
             where: { studentId },
             include: {
-                class: true,
+                section: true,
                 academicYear: true,
             },
             orderBy: { createdAt: "desc" },
@@ -388,7 +390,7 @@ export class StudentsService {
                 ...(dto.rollNumber !== undefined && { rollNumber: dto.rollNumber }),
             },
             include: {
-                class: true,
+                section: true,
                 academicYear: true,
             },
         });
@@ -401,16 +403,16 @@ export class StudentsService {
             academicYearId = current.id;
         }
 
-        const targetClass = await this.classesService.findOne(dto.targetClassId);
-        if (targetClass.academicYearId !== academicYearId) {
+        const targetSection = await this.sectionsService.findOne(dto.targetSectionId);
+        if (targetSection.academicYearId !== academicYearId) {
             throw new BadRequestException(
-                "Target class does not belong to the specified academic year",
+                "Target section does not belong to the specified academic year",
             );
         }
 
         const existingCount = await this.prisma.studentEnrollment.count({
             where: {
-                classId: dto.targetClassId,
+                sectionId: dto.targetSectionId,
                 academicYearId,
                 status: EnrollmentStatus.ACTIVE,
             },
@@ -466,7 +468,7 @@ export class StudentsService {
                 await tx.studentEnrollment.create({
                     data: {
                         studentId,
-                        classId: dto.targetClassId,
+                        sectionId: dto.targetSectionId,
                         academicYearId,
                         rollNumber,
                     },
@@ -476,7 +478,7 @@ export class StudentsService {
             try {
                 await this.feesService.generateFeeRecordForStudent(
                     studentId,
-                    dto.targetClassId,
+                    dto.targetSectionId,
                     academicYearId,
                 );
             } catch (feeError) {

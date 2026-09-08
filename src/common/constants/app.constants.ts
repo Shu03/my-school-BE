@@ -38,7 +38,7 @@ export const JWT_FIRST_LOGIN_STRATEGY = "jwt-first-login";
 // Permission flags
 export const PERMISSION_LEAVE_APPLY = "LEAVE_APPLY";
 export const PERMISSION_ACADEMIC_YEAR_MANAGE = "ACADEMIC_YEAR_MANAGE";
-export const PERMISSION_CLASS_MANAGE = "CLASS_MANAGE";
+export const PERMISSION_SECTION_MANAGE = "SECTION_MANAGE";
 export const PERMISSION_SUBJECT_MANAGE = "SUBJECT_MANAGE";
 export const PERMISSION_ATTENDANCE_READ = "ATTENDANCE_READ";
 export const PERMISSION_ATTENDANCE_WRITE = "ATTENDANCE_WRITE";
@@ -121,8 +121,11 @@ export const ERROR_HOMEWORK_FORBIDDEN_SCOPE = "You are not allowed to access thi
 export const ERROR_ANNOUNCEMENT_NOT_FOUND = "Announcement not found";
 export const ERROR_ANNOUNCEMENT_NOT_CREATOR = "You can only modify announcements you created";
 export const ERROR_ANNOUNCEMENT_EMPTY_UPDATE =
-    "At least one field must be provided: title, content";
+    "At least one field must be provided: title, content, startDate, endDate";
 export const ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS = "Insufficient permissions";
+export const ERROR_ANNOUNCEMENT_EXPIRED =
+    "This announcement has passed its end date and can no longer be modified or deleted";
+export const ERROR_ANNOUNCEMENT_INVALID_DATE_RANGE = "endDate must be after startDate";
 
 // Fee error messages
 export const ERROR_FEE_STRUCTURE_NOT_FOUND = "Fee structure not found";
@@ -141,7 +144,7 @@ export const ERROR_FEE_TEACHER_NO_ACCESS_TO_STUDENT = "You do not have access to
 export const ALL_PERMISSIONS = [
     PERMISSION_LEAVE_APPLY,
     PERMISSION_ACADEMIC_YEAR_MANAGE,
-    PERMISSION_CLASS_MANAGE,
+    PERMISSION_SECTION_MANAGE,
     PERMISSION_SUBJECT_MANAGE,
     PERMISSION_ATTENDANCE_READ,
     PERMISSION_ATTENDANCE_WRITE,

@@ -20,7 +20,7 @@ export class CreateHomeworkDto {
 
     @ApiProperty({ example: "uuid-of-class" })
     @IsUUID()
-    public classId!: string;
+    public sectionId!: string;
 
     @ApiProperty({ example: "uuid-of-subject" })
     @IsUUID()

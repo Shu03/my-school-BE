@@ -4,10 +4,10 @@ import { FeeRecordStatus } from "@prisma/client";
 import { IsEnum, IsOptional, IsUUID } from "class-validator";
 
 export class ListFeeRecordsDto {
-    @ApiPropertyOptional({ example: "uuid-of-class" })
+    @ApiPropertyOptional({ example: "uuid-of-section" })
     @IsUUID()
     @IsOptional()
-    public classId?: string;
+    public sectionId?: string;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

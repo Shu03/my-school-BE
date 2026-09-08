@@ -10,7 +10,7 @@ export class ListExamsDto {
     @ApiPropertyOptional({ example: "uuid-of-class" })
     @IsUUID()
     @IsOptional()
-    public classId?: string;
+    public sectionId?: string;
 
     @ApiPropertyOptional({ example: "uuid-of-subject" })
     @IsUUID()

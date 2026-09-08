@@ -30,7 +30,7 @@ export class CreateExamDto {
 
     @ApiProperty({ example: "uuid-of-class" })
     @IsUUID()
-    public classId!: string;
+    public sectionId!: string;
 
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()

@@ -9,7 +9,9 @@ import { Prisma, Role } from "@prisma/client";
 
 import {
     ERROR_ANNOUNCEMENT_EMPTY_UPDATE,
+    ERROR_ANNOUNCEMENT_EXPIRED,
     ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS,
+    ERROR_ANNOUNCEMENT_INVALID_DATE_RANGE,
     ERROR_ANNOUNCEMENT_NOT_CREATOR,
     ERROR_ANNOUNCEMENT_NOT_FOUND,
     PERMISSION_ANNOUNCEMENTS_MANAGE,
@@ -61,6 +63,12 @@ export class AnnouncementsService {
         }
     }
 
+    private assertNotExpired(announcement: AnnouncementBasic): void {
+        if (announcement.endDate.getTime() < Date.now()) {
+            throw new BadRequestException(ERROR_ANNOUNCEMENT_EXPIRED);
+        }
+    }
+
     public async create(
         dto: CreateAnnouncementDto,
         requestingUser: JwtPayload,
@@ -72,10 +80,19 @@ export class AnnouncementsService {
             throw new ForbiddenException(ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS);
         }
 
+        const startDate = new Date(dto.startDate);
+        const endDate = new Date(dto.endDate);
+
+        if (endDate.getTime() <= startDate.getTime()) {
+            throw new BadRequestException(ERROR_ANNOUNCEMENT_INVALID_DATE_RANGE);
+        }
+
         return this.prismaService.announcement.create({
             data: {
                 title: dto.title,
                 content: dto.content,
+                startDate,
+                endDate,
                 createdById: requestingUser.sub,
             },
             include: ANNOUNCEMENT_INCLUDE,
@@ -110,12 +127,18 @@ export class AnnouncementsService {
         dto: UpdateAnnouncementDto,
         requestingUser: JwtPayload,
     ): Promise<AnnouncementBasic> {
-        if (dto.title === undefined && dto.content === undefined) {
+        if (
+            dto.title === undefined &&
+            dto.content === undefined &&
+            dto.startDate === undefined &&
+            dto.endDate === undefined
+        ) {
             throw new BadRequestException(ERROR_ANNOUNCEMENT_EMPTY_UPDATE);
         }
 
         const announcement = await this.assertAnnouncementExists(id);
         this.assertCanModify(announcement, requestingUser);
+        this.assertNotExpired(announcement);
 
         if (
             requestingUser.role === Role.TEACHER &&
@@ -124,11 +147,21 @@ export class AnnouncementsService {
             throw new ForbiddenException(ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS);
         }
 
+        const startDate =
+            dto.startDate !== undefined ? new Date(dto.startDate) : announcement.startDate;
+        const endDate = dto.endDate !== undefined ? new Date(dto.endDate) : announcement.endDate;
+
+        if (endDate.getTime() <= startDate.getTime()) {
+            throw new BadRequestException(ERROR_ANNOUNCEMENT_INVALID_DATE_RANGE);
+        }
+
         return this.prismaService.announcement.update({
             where: { id },
             data: {
                 ...(dto.title !== undefined && { title: dto.title }),
                 ...(dto.content !== undefined && { content: dto.content }),
+                ...(dto.startDate !== undefined && { startDate }),
+                ...(dto.endDate !== undefined && { endDate }),
             },
             include: ANNOUNCEMENT_INCLUDE,
         });
@@ -137,6 +170,7 @@ export class AnnouncementsService {
     public async delete(id: string, requestingUser: JwtPayload): Promise<AnnouncementBasic> {
         const announcement = await this.assertAnnouncementExists(id);
         this.assertCanModify(announcement, requestingUser);
+        this.assertNotExpired(announcement);
 
         await this.prismaService.announcement.delete({ where: { id } });
 

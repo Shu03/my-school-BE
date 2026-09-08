@@ -417,6 +417,10 @@ export class AuthService {
             throw new NotFoundException("User not found");
         }
 
+        if (!user.isActive) {
+            throw new BadRequestException("User must be activated to perform this operation");
+        }
+
         const tempPassword = generateTempPassword();
         const hashedPassword = await hashPassword(tempPassword);
 

@@ -3,7 +3,7 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsInt, IsOptional, IsUUID, Min } from "class-validator";
 
-export class ListClassesDto {
+export class ListSectionsDto {
     @ApiPropertyOptional({ example: "uuid-of-academic-year" })
     @IsUUID()
     @IsOptional()
@@ -14,5 +14,5 @@ export class ListClassesDto {
     @Min(1)
     @IsOptional()
     @Transform(({ value }: { value: string }) => parseInt(value, 10))
-    public gradeLevel?: number;
+    public classLevel?: number;
 }

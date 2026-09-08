@@ -29,7 +29,7 @@ enum EnrollmentStatus {
 model StudentEnrollment {
   id             String           @id @default(uuid())
   studentId      String
-  classId        String
+  sectionId      String
   academicYearId String
   rollNumber     String
   status         EnrollmentStatus @default(ACTIVE)
@@ -38,11 +38,11 @@ model StudentEnrollment {
 
   // Relations
   student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class        Class          @relation(fields: [classId], references: [id])
+  section      Section        @relation(fields: [sectionId], references: [id])
   academicYear AcademicYear   @relation(fields: [academicYearId], references: [id])
 
   @@unique([studentId, academicYearId])
-  @@index([classId, academicYearId])
+  @@index([sectionId, academicYearId])
   @@index([studentId])
   @@map("student_enrollments")
 }

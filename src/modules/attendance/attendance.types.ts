@@ -25,5 +25,5 @@ export type AttendanceSummaryItem = {
 export type BulkMarkResult = {
     marked: number;
     date: string;
-    classId: string;
+    sectionId: string;
 };
