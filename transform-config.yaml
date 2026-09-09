@@ -1,0 +1,13 @@
+additionalPlanContext: |
+    Analyze the backend codebase using only repository evidence; do not modify application source code.
+
+    Produce practical, frontend-friendly architecture documentation that includes:
+    - System overview: services, modules, databases, events/workers, external APIs, AWS infrastructure, and synchronous/asynchronous flows.
+    - Module analysis: purpose, routes/controllers, services, data access, models/DTOs, middleware, events, and configuration. For every significant module, document its dependencies and consumers, determine whether its directory is a real business boundary or only organization, and identify boundary inconsistencies and hidden coupling.
+    - API contracts: endpoints, authentication/authorization, validation, responses/errors, database and external calls, events, and representative FE-to-BE flows.
+    - Domain and data architecture: entities, business rules, state transitions, ownership, relationships, indexes, transactions, migrations, and consistency/performance risks.
+    - Async processing and integrations: producer/consumer paths, retries, idempotency, timeouts, failure handling, and coupling.
+    - Existing coding conventions: identify established, inconsistent, legacy, problematic, and recommended patterns. Cite the strongest reference implementations for adding modules, endpoints, persistence, integrations, auth, logging, tests, and configuration.
+    - Production readiness: prioritize concrete risks involving reliability, security, authorization, performance, consistency, observability, testing, secrets, and deployment.
+
+    Use concrete paths, modules, classes, functions, APIs, models, events, configuration, infrastructure, and tests. Include a high-level architecture diagram plus sequence/flow diagrams for important request, event, and integration paths. Clearly label FACT (code evidence), INFERENCE, and RECOMMENDATION; state uncertainty where evidence is insufficient. Prefer incremental improvements, explain trade-offs and production impact, and use tables, flows, and checklists where useful.
