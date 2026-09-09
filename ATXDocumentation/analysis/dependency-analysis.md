@@ -2,42 +2,58 @@
 
 ## Internal Dependency Graph
 
-```
-                        ┌──────────────┐
-                        │ ConfigModule │ (isGlobal)
-                        └──────────────┘
-                        ┌──────────────┐
-                        │ PrismaModule │ (@Global) ── used by ALL
-                        └──────────────┘
+```mermaid
+graph TD
+    subgraph Global["Global (available everywhere)"]
+        Config["ConfigModule<br/>(isGlobal)"]
+        Prisma["PrismaModule<br/>(@Global)"]
+    end
 
-Level 0 (no module imports):
-┌────────────────┐  ┌──────────────┐  ┌─────────────────┐  ┌──────────────────┐
-│ UsersModule    │  │ AcademicYears│  │ SubjectsModule  │  │ TeachersModule   │
-│ (8 routes)     │  │ (10 routes)  │  │ (5 routes)      │  │ (15 routes)      │
-└────────────────┘  └──────────────┘  └─────────────────┘  └──────────────────┘
-┌──────────────────┐
-│ AnnouncementsModule (5 routes)
-└──────────────────┘
+    subgraph Level0["Level 0 — No module imports"]
+        Users["UsersModule<br/>(8 routes)"]
+        AY["AcademicYearsModule<br/>(10 routes)"]
+        Subjects["SubjectsModule<br/>(5 routes)"]
+        Teachers["TeachersModule<br/>(15 routes)"]
+        Announcements["AnnouncementsModule<br/>(5 routes)"]
+    end
 
-Level 1:
-┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-│ Auth     │  │ Sections │  │ School   │  │ Fees     │  │ Exams    │
-│ ←Users  │  │ ←AcYear  │  │ ←AcYear  │  │ ←AcYear  │  │ ←AcYear  │
-└──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
-                                                         ┌──────────┐
-                                                         │ Homework │
-                                                         │ ←AcYear  │
-                                                         └──────────┘
+    subgraph Level1["Level 1"]
+        Auth["AuthModule ← Users"]
+        Sections["SectionsModule ← AcYear"]
+        School["SchoolModule ← AcYear"]
+        Fees["FeesModule ← AcYear"]
+        Exams["ExamsModule ← AcYear"]
+        Homework["HomeworkModule ← AcYear"]
+    end
 
-Level 2:
-┌────────────────────────┐  ┌─────────────────────────────┐
-│ Attendance             │  │ Grades                      │
-│ ←School + AcYear       │  │ ←Exams + AcYear             │
-└────────────────────────┘  └─────────────────────────────┘
-┌─────────────────────────────────────┐
-│ Students                            │
-│ ←AcYear + Sections + Fees           │
-└─────────────────────────────────────┘
+    subgraph Level2["Level 2"]
+        Attendance["AttendanceModule<br/>← School + AcYear"]
+        Grades["GradesModule<br/>← Exams + AcYear"]
+        Students["StudentsModule<br/>← AcYear + Sections + Fees"]
+    end
+
+    Prisma -.-> Level0
+    Prisma -.-> Level1
+    Prisma -.-> Level2
+
+    Users --> Auth
+    AY --> Sections
+    AY --> School
+    AY --> Fees
+    AY --> Exams
+    AY --> Homework
+    AY --> Attendance
+    AY --> Grades
+    AY --> Students
+    School --> Attendance
+    Exams --> Grades
+    Sections --> Students
+    Fees --> Students
+
+    style Global fill:#f3e5f5,stroke:#7b1fa2
+    style Level0 fill:#e8f5e9,stroke:#388e3c
+    style Level1 fill:#fff8e1,stroke:#f9a825
+    style Level2 fill:#fce4ec,stroke:#c62828
 ```
 
 ## External Dependency Criticality

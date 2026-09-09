@@ -1,8 +1,49 @@
 # Database Schemas and Query Patterns
 
-## PostgreSQL Schema
+## PostgreSQL Schema Overview
 
-### Tables (20)
+```mermaid
+erDiagram
+    User ||--o{ RefreshToken : "has sessions"
+    User ||--o| TeacherProfile : "is teacher"
+    User ||--o| StudentProfile : "is student"
+    User ||--o{ Announcement : "createdBy"
+    User ||--o{ FeePayment : "recordedBy"
+
+    TeacherProfile ||--o{ TeacherClassAssignment : "assigned to"
+    TeacherProfile }o--o| PermissionPreset : "uses preset"
+    TeacherProfile ||--o{ Attendance : "markedBy"
+    TeacherProfile ||--o{ Exam : "createdBy"
+    TeacherProfile ||--o{ Grade : "gradedBy"
+    TeacherProfile ||--o{ Homework : "createdBy"
+
+    StudentProfile ||--o{ StudentEnrollment : "enrolled in"
+    StudentProfile ||--o{ Attendance : "attendance of"
+    StudentProfile ||--o{ Grade : "receives"
+    StudentProfile ||--o{ FeeRecord : "owes"
+
+    AcademicYear ||--o{ Term : "has terms"
+    AcademicYear ||--o{ Section : "has sections"
+    AcademicYear ||--o{ Holiday : "has holidays"
+    AcademicYear ||--o{ FeeStructure : "fee config"
+    AcademicYear ||--o{ Exam : "exams in"
+    AcademicYear ||--o{ StudentEnrollment : "enrollments in"
+
+    Section ||--o{ TeacherClassAssignment : "teachers in"
+    Section ||--o{ StudentEnrollment : "students in"
+
+    Subject ||--o{ TeacherClassAssignment : "taught by"
+    Subject ||--o{ ExamSubject : "tested in"
+    Subject ||--o{ Homework : "homework for"
+
+    Exam ||--o{ ExamSubject : "has subjects"
+    ExamSubject ||--o{ Grade : "grades for"
+
+    FeeStructure ||--o{ FeeRecord : "generates"
+    FeeRecord ||--o{ FeePayment : "payments"
+```
+
+### Tables (22 models across 11 schema files)
 
 | Table | Domain | Rows (expected) | Key Indexes |
 |-------|--------|-----------------|-------------|

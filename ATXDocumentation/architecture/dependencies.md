@@ -2,6 +2,62 @@
 
 ## Internal Module Dependencies
 
+### Module Dependency Graph
+
+```mermaid
+graph TD
+    subgraph Global["Global Infrastructure"]
+        Prisma["PrismaModule<br/>(@Global)"]
+        Config["ConfigModule<br/>(isGlobal)"]
+    end
+
+    subgraph Level0["Level 0 — No feature module imports"]
+        Users["UsersModule<br/>(8 routes)"]
+        AY["AcademicYearsModule<br/>(10 routes)"]
+        Subjects["SubjectsModule<br/>(5 routes)"]
+        Teachers["TeachersModule<br/>(15 routes)"]
+        Announcements["AnnouncementsModule<br/>(5 routes)"]
+    end
+
+    subgraph Level1["Level 1 — Single dependency"]
+        Auth["AuthModule<br/>(6 routes)"]
+        Sections["SectionsModule<br/>(4 routes)"]
+        School["SchoolModule<br/>(5 routes)"]
+        Fees["FeesModule<br/>(9 routes)"]
+        Exams["ExamsModule<br/>(10 routes)"]
+        Homework["HomeworkModule<br/>(5 routes)"]
+    end
+
+    subgraph Level2["Level 2 — Multiple dependencies"]
+        Attendance["AttendanceModule<br/>(4 routes)"]
+        Grades["GradesModule<br/>(4 routes)"]
+        Students["StudentsModule<br/>(7 routes)"]
+    end
+
+    Prisma -.->|injected into all| Level0
+    Prisma -.->|injected into all| Level1
+    Prisma -.->|injected into all| Level2
+
+    Users --> Auth
+    AY --> Sections
+    AY --> School
+    AY --> Fees
+    AY --> Exams
+    AY --> Homework
+    AY --> Attendance
+    AY --> Grades
+    AY --> Students
+    School --> Attendance
+    Exams --> Grades
+    Sections --> Students
+    Fees --> Students
+
+    style Global fill:#f3e5f5,stroke:#7b1fa2
+    style Level0 fill:#e8f5e9,stroke:#388e3c
+    style Level1 fill:#fff8e1,stroke:#f9a825
+    style Level2 fill:#fce4ec,stroke:#c62828
+```
+
 ### Dependency Matrix
 
 | Module | Depends On | Depended On By |
@@ -27,6 +83,47 @@
 ### Implicit Dependencies (via PrismaService)
 
 While modules declare explicit NestJS imports, many services have **implicit coupling** through shared Prisma models:
+
+```mermaid
+graph LR
+    subgraph Services["Services with hidden coupling"]
+        AS["AttendanceService"]
+        ES["ExamsService"]
+        GS["GradesService"]
+        HS["HomeworkService"]
+        FS["FeesService"]
+        SS["StudentsService"]
+    end
+
+    subgraph Models["Prisma models queried across domains"]
+        SE["studentEnrollment"]
+        TCA["teacherClassAssignment"]
+        H["holiday"]
+        SchS["schoolSettings"]
+        Sub["subject"]
+        Sec["section"]
+        FSt["feeStructure"]
+    end
+
+    AS -->|queries| SE
+    AS -->|queries| TCA
+    AS -->|queries| H
+    AS -->|queries| SchS
+    ES -->|queries| TCA
+    ES -->|queries| SE
+    ES -->|queries| Sub
+    GS -->|queries| TCA
+    GS -->|queries| SE
+    HS -->|queries| TCA
+    HS -->|queries| Sub
+    FS -->|queries| SE
+    FS -->|queries| FSt
+    SS -->|queries| Sec
+    SS -->|queries| FSt
+
+    style Services fill:#fff3e0,stroke:#e65100
+    style Models fill:#e3f2fd,stroke:#1565c0
+```
 
 | Service | Queries Models From Other Domains |
 |---------|-----------------------------------|

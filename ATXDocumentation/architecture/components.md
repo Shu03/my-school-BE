@@ -54,23 +54,27 @@ The application consists of 16 NestJS modules. Each feature module follows a con
 
 ### Cross-Module Dependencies
 
-```
-                    ┌─────────────────────┐
-                    │  AcademicYearsModule │ ◄──── Most depended-upon module
-                    │  (exported service)  │
-                    └────────┬────────────┘
-                             │ Imported by:
-          ┌──────────────────┼───────────────────────────────┐
-          │         │        │        │         │     │      │
-          ▼         ▼        ▼        ▼         ▼     ▼      ▼
-     Sections   Attendance  Exams   Grades   Homework School  Students
-                    │                  │                        │
-                    │                  │         ┌──────────────┤
-                    ▼                  ▼         ▼              ▼
-               SchoolModule      ExamsModule  SectionsModule  FeesModule
-                                               │
-                                               ▼
-                                          (imported by Students)
+```mermaid
+graph TD
+    AY["AcademicYearsModule<br/>🏆 Most depended-upon"]
+
+    AY --> Sections
+    AY --> Attendance
+    AY --> Exams
+    AY --> Grades
+    AY --> Homework
+    AY --> School
+    AY --> Students
+    AY --> Fees
+
+    School --> Attendance
+    Exams --> Grades
+    Sections --> Students
+    Fees --> Students
+    Users --> Auth
+
+    style AY fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style Students fill:#fff3e0,stroke:#e65100,stroke-width:2px
 ```
 
 **Key dependency facts**:
@@ -81,6 +85,40 @@ The application consists of 16 NestJS modules. Each feature module follows a con
 - `AttendanceModule` imports SchoolModule (for `isSchoolDay()`) + AcademicYearsModule
 
 ### Data Flow Between Modules
+
+```mermaid
+flowchart LR
+    subgraph Enrollment["Student Enrollment Flow"]
+        direction TB
+        Students2["StudentsService<br/>.enroll()"]
+        Students2 -->|"generateFeeRecordForStudent()"| Fees2["FeesService"]
+        Students2 -->|"findOne(sectionId)"| Sections2["SectionsService"]
+    end
+
+    subgraph AttendanceFlow["Attendance Marking Flow"]
+        direction TB
+        Att["AttendanceService<br/>.mark()"]
+        Att -->|"isSchoolDay(date)"| SchoolSvc["SchoolService"]
+        Att -->|"findCurrent()"| AYSvc["AcademicYearsService"]
+    end
+
+    subgraph GradeFlow["Grade Entry Flow"]
+        direction TB
+        Grade["GradesService<br/>.submitGrades()"]
+        Grade -->|"findOne(examId)"| ExamSvc["ExamsService"]
+    end
+
+    subgraph AuthFlow["Authentication Flow"]
+        direction TB
+        AuthSvc["AuthService<br/>.login()"]
+        AuthSvc -->|"findByMobile()"| UserSvc["UsersService"]
+    end
+
+    style Enrollment fill:#e8f5e9,stroke:#2e7d32
+    style AttendanceFlow fill:#fff3e0,stroke:#e65100
+    style GradeFlow fill:#e3f2fd,stroke:#1565c0
+    style AuthFlow fill:#fce4ec,stroke:#c62828
+```
 
 | Source Module | Target Module | Interaction |
 |---------------|---------------|-------------|

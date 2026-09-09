@@ -2,28 +2,92 @@
 
 ## Entity Relationship Overview
 
-```
-User ──────────┬─── TeacherProfile ──── TeacherClassAssignment ──── Section
-               │         │                                            │
-               │         ├── PermissionPreset                         │
-               │         ├── Attendance (markedBy)                    │
-               │         ├── Exam (createdBy)                         │
-               │         ├── Grade (gradedBy)                         │
-               │         └── Homework (createdBy)                     │
-               │                                                      │
-               ├─── StudentProfile ──── StudentEnrollment ────────── Section
-               │         │                                            │
-               │         ├── Attendance                     AcademicYear
-               │         ├── Grade                              │
-               │         └── FeeRecord ── FeePayment            ├── Term
-               │                                                ├── Section
-               ├─── RefreshToken                                ├── Holiday
-               ├─── Announcement (createdBy)                    ├── Exam
-               └─── FeePayment (recordedBy)                     └── FeeStructure
+```mermaid
+graph TD
+    subgraph UserDomain["User Domain"]
+        User["User"]
+        RT["RefreshToken"]
+    end
 
-Subject ──── ExamSubject ──── Grade
-         └── TeacherClassAssignment
-         └── Homework
+    subgraph TeacherDomain["Teacher Domain"]
+        TP["TeacherProfile"]
+        PP["PermissionPreset"]
+        TCA["TeacherClassAssignment"]
+    end
+
+    subgraph StudentDomain["Student Domain"]
+        SP["StudentProfile"]
+        SE["StudentEnrollment"]
+    end
+
+    subgraph AcademicDomain["Academic Domain"]
+        AY["AcademicYear"]
+        Term["Term"]
+        Section["Section"]
+        Subject["Subject"]
+        Holiday["Holiday"]
+    end
+
+    subgraph ExamDomain["Exam Domain"]
+        Exam["Exam"]
+        ES["ExamSubject"]
+        Grade["Grade"]
+    end
+
+    subgraph FeeDomain["Fee Domain"]
+        FS["FeeStructure"]
+        FR["FeeRecord"]
+        FP["FeePayment"]
+    end
+
+    subgraph Other["Other"]
+        Att["Attendance"]
+        HW["Homework"]
+        Ann["Announcement"]
+        SS["SchoolSettings"]
+    end
+
+    User -->|"1:0..1"| TP
+    User -->|"1:0..1"| SP
+    User -->|"1:*"| RT
+    User -->|"createdBy"| Ann
+    User -->|"recordedBy"| FP
+    TP -->|"presetId"| PP
+    TP -->|"1:*"| TCA
+    TP -->|"markedBy"| Att
+    TP -->|"createdBy"| Exam
+    TP -->|"gradedBy"| Grade
+    TP -->|"createdBy"| HW
+
+    SP -->|"1:*"| SE
+    SP -->|"1:*"| Grade
+    SP -->|"1:*"| FR
+    SP -->|"1:*"| Att
+
+    AY -->|"1:*"| Term
+    AY -->|"1:*"| Section
+    AY -->|"1:*"| Holiday
+    AY -->|"1:*"| FS
+    AY -->|"1:*"| Exam
+
+    Section -->|"1:*"| TCA
+    Section -->|"1:*"| SE
+    Subject -->|"1:*"| TCA
+    Subject -->|"1:*"| ES
+    Subject -->|"1:*"| HW
+
+    Exam -->|"1:*"| ES
+    ES -->|"1:*"| Grade
+    FS -->|"1:*"| FR
+    FR -->|"1:*"| FP
+
+    style UserDomain fill:#e3f2fd,stroke:#1565c0
+    style TeacherDomain fill:#fff3e0,stroke:#e65100
+    style StudentDomain fill:#e8f5e9,stroke:#2e7d32
+    style AcademicDomain fill:#f3e5f5,stroke:#7b1fa2
+    style ExamDomain fill:#fce4ec,stroke:#c62828
+    style FeeDomain fill:#fff8e1,stroke:#f9a825
+    style Other fill:#f5f5f5,stroke:#616161
 ```
 
 ## Models by Domain
