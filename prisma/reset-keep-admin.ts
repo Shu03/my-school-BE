@@ -16,7 +16,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 config();
 
-const KEEP_ADMIN_MOBILE = "9999999999";
+const KEEP_ADMIN_MOBILE = "8762224006";
 
 const prisma = new PrismaClient({
     adapter: new PrismaPg({
@@ -85,8 +85,8 @@ async function main(): Promise<void> {
     console.log("  ✓ teacher_profiles");
 
     // ── Academic structure ────────────────────────────────
-    await prisma.class.deleteMany({});
-    console.log("  ✓ classes");
+    await prisma.section.deleteMany({});
+    console.log("  ✓ sections");
     await prisma.subject.deleteMany({});
     console.log("  ✓ subjects");
     await prisma.term.deleteMany({});
