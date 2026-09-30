@@ -92,7 +92,8 @@ Admin-managed exams per section and academic year. Each exam has one or more Exa
 - State flags are `isFinalized` (bool) and `status` (ACTIVE/DISCARDED). Allowed transitions:
   - `finalize`: rejected if DISCARDED or already finalized (:399-409).
   - `unlock`: rejected if DISCARDED, with no check that the exam is finalized (:411-420).
-  - `discard`: rejected if finalized (:422-431). Discard has no way back.
+  - `discard`: rejected if finalized (:422-431). Discard has no way back; discarding an already-discarded exam succeeds again.
+- ExamSubject `totalMarks` is 1–1000 in the DTOs (create, add, update).
 - `update`, `addSubject`, `updateSubject` and `removeSubject` require the exam to be neither finalized nor discarded (:310-397).
 - `update` rejects an empty body (:311) and only covers name, type and termId.
 - `addSubject` rejects a duplicate subject (:339). `removeSubject` refuses to remove the last subject (:388).
@@ -117,7 +118,7 @@ Admin-managed exams per section and academic year. Each exam has one or more Exa
 - A teacher holding an approved grant in a section (for any subject or type) can see every exam in that section.
 - No unit spec files exist for this module.
 ### Test focus
-- The state machine: finalize → update gives 400; unlock → update works; discard while finalized gives 400; every operation on a discarded exam gives 400.
+- The state machine: finalize → update gives 400; unlock → update works; discard while finalized gives 400; finalize, unlock, update and subject changes on a discarded exam give 400 (reads and re-discard still succeed).
 - Removing the last subject gives 400. A duplicate subject gives 400. A subject whose classLevel does not match the section gives 400.
 - A term from another year gives 400.
 - A STUDENT not enrolled gets 403 on findOne, and the list excludes that exam.

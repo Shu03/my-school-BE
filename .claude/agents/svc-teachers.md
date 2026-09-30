@@ -101,18 +101,19 @@ Manages teacher profiles (employeeCode, joiningDate) and TeacherClassAssignment 
 - Consumes: PrismaService only.
 ### Known pitfalls / risks
 - Single-class-teacher race. Also, subjectId is NULL for CLASS_TEACHER, so the Postgres unique constraint does not stop duplicate CLASS_TEACHER rows (:196-207, teacher.prisma:38).
-- Duplicate SUBJECT_TEACHER rows are not pre-checked. They hit P2002 and return 500.
+- Duplicate SUBJECT_TEACHER rows (same teacher + section + subject) are not pre-checked. They hit P2002, which the global filter maps to 409. A different teacher for the same section + subject is allowed.
 - There is no check that the section is in the current academic year, and none that the teacher's user is active or has the TEACHER role.
 - Deleting an assignment does not affect existing grants or pending requests. The teacher immediately loses assignment-based access.
 - `findAllTeachers` is unbounded and has no pagination (:75-88). There is no ParseUUIDPipe on the ids.
-- A malformed or unknown employeeCode update race can cause a 500. `joiningDate` is stored as a UTC date.
+- A concurrent duplicate employeeCode update gives 409 (P2002 via the filter). `joiningDate` is stored as a UTC date.
+- CLASS_TEACHER covers every subject in the section; SUBJECT_TEACHER covers only its subject (access-policy.service.ts:56-82).
 ### Test focus
 - A teacher viewing another teacher's profile or assignments gets 403. Their own gets 200. A missing id gets 404.
 - A teacher calling POST/DELETE assignments or PATCH gets 403.
 - A second CLASS_TEACHER for a section gets 400. Concurrent creates can produce duplicates.
 - SUBJECT_TEACHER without subjectId, CLASS_TEACHER with subjectId, and a class-level mismatch all give 400.
 - Deleting an assignment that belongs to another teacher gets 403.
-- After deleting the assignment, `AccessPolicyService.resolveSubjectAccess` returns null.
+- After deleting the assignment, `AccessPolicyService.resolveSubjectAccess` returns null, or `GRANTED` if the teacher still holds an approved AccessRequest for that scope.
 
 ## Output contract
 

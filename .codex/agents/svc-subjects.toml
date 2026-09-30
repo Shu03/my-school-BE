@@ -95,7 +95,8 @@ A subject catalogue keyed by `(name, classLevel)` and `(code, classLevel)`. Subj
 - Only APPROVED access requests block deletion. PENDING requests referencing the subject are not checked.
 - Information leak: GET /subjects/:id exposes every teacher assignment with the teacher's user record (only the password omitted) to STUDENT callers (:102-114).
 - Assignments are not filtered by academic year, so `findOne` includes past years' assignments. Any historical assignment also blocks deletion forever.
-- Uniqueness checks are check-then-write, so a race gives P2002. The name check is case-sensitive, so "Math" and "math" can coexist.
+- Delete does not check ExamSubject or Homework references. Those relations are required with the default Restrict, so deleting a subject in use raises P2003 → 500 (exam.prisma:48, homework.prisma:14). Non-approved AccessRequests have an optional relation and get `subjectId` set to null.
+- Uniqueness checks are check-then-write, so a race gives P2002 → 409 via the global filter. The name check is case-sensitive, so "Math" and "math" can coexist.
 - `findAll` has no pagination.
 ### Test focus
 - Create with a duplicate name or code at the same classLevel gives 400. The same name at a different level is OK.

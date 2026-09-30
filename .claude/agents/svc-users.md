@@ -98,15 +98,16 @@ Admin-only CRUD for User accounts. It creates ADMIN, TEACHER (with teacherProfil
 - Exports: UsersModule, UsersService and types. The only external consumer is AuthModule/AuthService (injected but unused) and the `UserWithProfiles` type.
 - Consumes: PrismaService, generateTempPassword/hashPassword.
 ### Known pitfalls / risks
-- The uniqueness pre-checks are read-then-write races. A concurrent duplicate hits the DB unique constraint and surfaces as an unhandled P2002 (500), not a 400.
+- The uniqueness pre-checks are read-then-write races. A concurrent duplicate hits the DB unique constraint; the P2002 is mapped to 409 by `GlobalExceptionFilter` (common/filters/http-exception.filter.ts:78), not the 400 of the pre-check.
 - `:id` params have no ParseUUIDPipe (controller :78, :87, :98, :107), so a malformed id reaches Prisma.
 - `deactivate` does not revoke refresh tokens. JwtStrategy blocks access tokens, and refresh checks isActive, so this is mitigated.
-- The mobile number cannot be updated. Email has no uniqueness check.
+- The mobile number cannot be updated. Email has no service pre-check, but `User.email` is `@unique` (user.prisma:13), so a duplicate returns 409 via the filter.
+- New users keep the schema default `isFirstLogin: true` (user.prisma:16), which forces the password-change flow on first login.
 - `joiningDate`/`dateOfBirth` use `new Date("YYYY-MM-DD")`, which gives UTC midnight (timezone shift risk).
 - The comment at :71 says "used by auth module during registration", but that is not true.
 ### Test focus
 - A TEACHER or STUDENT calling any /users route gets 403.
-- A duplicate mobile, employeeCode or admissionNumber gets 400. Concurrent duplicates cause a 500.
+- A duplicate mobile, employeeCode or admissionNumber gets 400. Concurrent duplicates get 409. A duplicate email gets 409.
 - The create response never contains the password hash, and tempPassword is returned.
 - Updating or deactivating an inactive user gets 400. Activate works on an already-active user.
 - A deactivated user can no longer use an existing access token.

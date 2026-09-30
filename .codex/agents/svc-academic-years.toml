@@ -105,11 +105,11 @@ Manages academic years and the terms inside them. It also decides which year is 
 - The service has no ownership checks. A missing year gives 400 from `assertYearExists` in some places and 404 from `findOne`/`update` in others.
 ### Cross-module contracts
 - Exports `AcademicYearsModule`, `AcademicYearsService` and types (index.ts).
-- `findCurrent` is used by attendance.service.ts:66,367, grades.service.ts:289, fees.service.ts:77, request-access.service.ts:130, students.service.ts:137,305,402, homework.service.ts:169,207, exams.service.ts:170,207, school.service.ts:88, sections.service.ts:54,73 and the dashboard (dashboard.service.ts).
+- `findCurrent` is used by attendance.service.ts:66,367, grades.service.ts:289, fees.service.ts:77, request-access.service.ts:130, students.service.ts:137,305,402, homework.service.ts:169,207, exams.service.ts:170,207, school.service.ts:88, sections.service.ts:54,73. The dashboard does not call it; it runs its own `academicYear.findFirst({ isCurrent: true })` (dashboard.service.ts:31).
 - Consumes only PrismaService.
 ### Known pitfalls / risks
-- `create` (:57-97) and `update` are check-then-write with no transaction. A race turns into a P2002 error instead of the 400. Term name duplicates are never pre-checked, so they also surface as P2002.
-- The partial unique index on `isCurrent` has not been checked in migrations. Seeds or races could leave several current years, and `findFirst` would then pick one arbitrarily (:106).
+- `create` (:57-97) and `update` are check-then-write with no transaction. A race gives P2002, which the global filter maps to 409 instead of the 400. Term name duplicates are never pre-checked, so they always return 409.
+- There is no unique/partial index on `isCurrent` (schema or migrations). Seeds or races could leave several current years, and `findFirst` would then pick one arbitrarily (:106).
 - `setCurrent` reads the current year outside the transaction (:172).
 - Shrinking a year's dates in `update` can leave terms and holidays outside the year.
 - The term bounds check uses `academicYear!` (:219). It is safe only because `assertYearExists` runs just before it, but that means two queries.
@@ -122,7 +122,7 @@ Manages academic years and the terms inside them. It also decides which year is 
 - Term routes return 404 for a term belonging to a different year.
 - STUDENT/TEACHER get 403 on POST/PATCH but 200 on GET /current and GET /:id/terms.
 - Updating year dates so existing terms fall outside (currently allowed; document the behaviour).
-- A duplicate term name produces a P2002 error. Check how the filter maps it.
+- A duplicate term name returns 409 (P2002 via the global filter).
 
 ## Output contract
 

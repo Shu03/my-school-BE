@@ -97,8 +97,8 @@ Stores the single school settings row (weekly off days) and a holiday calendar p
 ### Known pitfalls / risks
 - Timezone mismatch in `isSchoolDay`: `getDay(parseISO(date))` (:106) uses the server's local timezone, while `new Date(date)` (:115) uses UTC midnight. A full datetime string, or a non-UTC server, can compare against the wrong weekday or holiday.
 - `getOrCreateSettings` has a race: two concurrent first calls can create two settings rows, since there is no unique constraint (:27-37).
-- `deleteHoliday` (:98-102) has no existence check, so a missing id raises Prisma P2025. Whether that becomes a 404 depends on common/filters/http-exception.filter.ts.
-- `createHoliday` is check-then-create. A race gives P2002.
+- `deleteHoliday` (:98-102) has no existence check, so a missing id raises Prisma P2025, which the global filter maps to 404 with a generic "Record not found".
+- `createHoliday` is check-then-create. A race gives P2002 → 409.
 - A holiday dated outside its academic year is accepted.
 - `listHolidays` has no pagination.
 ### Test focus

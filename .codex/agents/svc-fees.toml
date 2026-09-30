@@ -90,7 +90,8 @@ Handles per-class fee structures for each academic year, one fee record per stud
   - Looks up the section's classLevel, then the structure for that class and year.
   - Returns silently with only a warning log if either is missing.
   - Copies `structure.totalAmount` into the record as a snapshot.
-- `updateFeeStructure` (:222-240) needs `totalAmount` or `dueDate`, otherwise 400. The change does **not** propagate to existing FeeRecords.
+- `updateFeeStructure` (:222-240) needs `totalAmount` or `dueDate`, otherwise 400. `totalAmount` is snapshotted into FeeRecords, so a new amount does **not** propagate. `dueDate` lives only on the structure, so a new due date is visible on existing records (and the student dashboard) immediately.
+- DTO: `classLevel >= 1`, `totalAmount >= 1`.
 - `academicYearId` defaults to the current year through `AcademicYearsService.findCurrent` (:72-79).
 - `recordPayment` (:407-427):
   - Checks the record exists, creates the payment, then `recalculateAndUpdateStatus`.
@@ -134,7 +135,7 @@ Handles per-class fee structures for each academic year, one fee record per stud
 - Concurrent `recordPayment` calls on one record: final status is consistent with the payment sum.
 - Duplicate structure for the same class and year → 400. Empty update → 400.
 - Enroll a student with no structure: the enrollment succeeds and no record is created. Later backfill creates the record and is idempotent on a re-run.
-- `updateFeeStructure` does not change existing FeeRecord totals; document or fix this.
+- `updateFeeStructure` does not change existing FeeRecord totals but does change their effective due date; document or fix this.
 
 ## Output contract
 

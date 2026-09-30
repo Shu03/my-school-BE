@@ -82,6 +82,7 @@ Agent files: Claude `.claude/agents/<name>.md` · Codex `.codex/agents/<name>.to
 ### Purpose
 Homework items for each section, subject and academic year. They are created by admins or authorized teachers and visible to enrolled students.
 ### Business rules & invariants
+- DTO: title max 200, description max 2000.
 - `create` (homework.service.ts:162) defaults the year to the current one. The subject's classLevel must equal the section's (404/400, :66-92). `dueDate` is a strict ISO date with no past or future validation.
 - `createdById` is the TeacherProfile id, or null for ADMIN (:175-195).
 - The section is not checked against the given academicYearId.
@@ -111,7 +112,7 @@ Homework items for each section, subject and academic year. They are created by 
 - A STUDENT not enrolled in the section gets 403 on findOne, and the list excludes that homework.
 - A STUDENT calling POST, PATCH or DELETE gets 403 from RolesGuard.
 - PATCH with an empty body gives 400.
-- Check that the student response does not include the creator's email or phone.
+- The student response currently includes the creator's email and phone (see risks); assert the intended behaviour.
 
 ## Output contract
 

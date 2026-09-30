@@ -86,15 +86,15 @@ Records daily attendance for each section. `AttendanceDay` (unique on `[sectionI
 - Every id in `absentStudentIds` must be an ACTIVE enrollment of the section/year; this is checked with a count comparison (:139-160). The DTO requires the array to hold unique UUIDs (save-attendance-day.dto.ts:10-12).
 - The save is one full replacement in a single `$transaction`: upsert the `AttendanceDay` (markedById = user id), `deleteMany` the absences, then `createMany` the new absences. `Attendance.markedById` is the TeacherProfile id, or null for ADMIN (:283-312). The two `markedById` fields point at different entities (User vs TeacherProfile).
 - `deleteDay` (:328) returns 404 if no day was taken. Otherwise it deletes the absences and the day in one transaction.
-- `getStudentAttendance` (:357) builds the history from the `AttendanceDay` rows of the student's current enrollment section plus their absences. It returns [] if the student has no enrollment. The date range is optional.
-- `getSummary` (:420) is monthly and uses UTC month bounds (:428-431). Present = taken days − absences; percentage is rounded.
+- `getStudentAttendance` (:357) builds the history from the `AttendanceDay` rows of the student's enrollment section plus their absences. `academicYearId` is optional and defaults to the current year. It returns [] if the student has no enrollment. The date range is optional.
+- `getSummary` (:420) is monthly and uses UTC month bounds (:428-431). Any valid `YYYY-MM` is accepted; it is not restricted to the current year. Present = taken days − absences; percentage is rounded.
 - The date param must be strict ISO `YYYY-MM-DD` (attendance-day-params.dto.ts:11-12).
 ### Access control notes
 - `@Roles`: PUT/GET/DELETE `sections/:sectionId/days/:date` and GET `summary` allow ADMIN and TEACHER. GET `student/:studentId` also allows STUDENT (attendance.controller.ts:40-106).
 - Managing (save/delete) is limited to ADMIN or `AccessPolicyService.isClassTeacher`; anyone else gets 403 (:103-119).
 - Viewing a day or summary is limited to ADMIN or `isAssignedToSection` (class or subject teacher); anyone else gets 403 (:121-137).
 - Student history: a STUDENT can only see their own profile id. A TEACHER needs a `teacherClassAssignment` in any section where that student has any enrollment, regardless of year or status (:180-213). Otherwise 403.
-- Order of checks: the section's existence (404) and current-year check (400) run before the authorization check. A non-assigned user can therefore tell whether a section exists.
+- Order of checks: `saveDay`/`deleteDay` check section existence (404) and current year (400) before authorization. `getDay`/`getSummary` check existence then authorization, with no current-year check. A non-assigned user can therefore tell whether a section exists.
 ### Cross-module contracts
 - `index.ts` exports AttendanceModule, AttendanceService and types. A grep found no importers outside the module.
 - Consumes `SchoolService.isSchoolDay`, `AcademicYearsService.findCurrent`, `AccessPolicyService`, `getTodayInSchoolTimezone` (@common/utils).

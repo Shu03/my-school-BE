@@ -94,7 +94,8 @@ CRUD (minus delete) for class sections within an academic year, for example "10-
 - Information leak: any STUDENT can list every section and see class-teacher user details for any section (only the password is omitted) (:105-113).
 - `update` lets classLevel change with no checks on enrolled students or subject assignments, whose Subjects are keyed by classLevel (:140). This can leave teacherClassAssignments with a subject of the wrong level.
 - When creating with an explicit academicYearId, the year's existence isn't checked, so a bad id surfaces as a Prisma FK error.
-- The uniqueness check is check-then-write with no transaction, so a race gives P2002.
+- The uniqueness check is check-then-write with no transaction, so a race gives P2002 → 409 via the global filter.
+- `findAll` also defaults to the current year, so with no current year the list call returns 404.
 - `findOne` uses `findFirst` for the class teacher. If duplicate CLASS_TEACHER rows exist, which one is returned is nondeterministic.
 - `findAll` has no pagination.
 ### Test focus
