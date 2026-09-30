@@ -32,7 +32,10 @@
     "db:start": "docker compose up -d",
     "db:stop": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
-    "db:logs": "docker compose logs -f postgres"
+    "db:logs": "docker compose logs -f postgres",
+    "agents:build": "node scripts/agents/build.mjs",
+    "agents:check": "node scripts/agents/build.mjs --check",
+    "agents:stamp": "node scripts/agents/build.mjs --stamp"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
