@@ -1,0 +1,45 @@
+{
+    "$comment": "Configuration for scripts/agents/build.mjs. Change models here once; all generated agents follow.",
+    "modelTiers": {
+        "deep": {
+            "claude": "opus",
+            "codex": { "model": "gpt-6.1-sol", "reasoning": "high" }
+        },
+        "standard": {
+            "claude": "sonnet",
+            "codex": { "model": "gpt-6-luna", "reasoning": "high" }
+        }
+    },
+    "access": {
+        "write": {
+            "claudeTools": "Read, Grep, Glob, Edit, Write, Bash",
+            "codexSandbox": "workspace-write"
+        },
+        "analyze": {
+            "claudeTools": "Read, Grep, Glob, Bash",
+            "codexSandbox": "workspace-write"
+        },
+        "read-only": {
+            "claudeTools": "Read, Grep, Glob, Bash",
+            "codexSandbox": "read-only"
+        }
+    },
+    "serviceAgent": {
+        "tier": "standard",
+        "access": "write"
+    },
+    "$staleNotes": "warn | fail. 'fail' makes `pnpm agents:check` exit 1 when any module's code changed since its notes were last verified (stamped).",
+    "staleNotes": "warn",
+    "serviceGroups": {
+        "platform": ["prisma", "health"]
+    },
+    "infraServices": ["platform"],
+    "skills": [
+        "feature-pipeline",
+        "scaffold-module",
+        "write-tests",
+        "impact-analysis",
+        "prisma-migration",
+        "release-gate"
+    ]
+}

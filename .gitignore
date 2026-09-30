@@ -38,8 +38,10 @@ prisma/seed.js
 prisma/seed.js.map
 prisma/seed.d.ts
 
-# Claude
-.claude/
+# Claude (local settings stay ignored; generated agents & skills are committed)
+.claude/*
+!.claude/agents/
+!.claude/skills/
 
 # Husky
 .husky/_/
