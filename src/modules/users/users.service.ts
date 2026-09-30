@@ -117,7 +117,6 @@ export class UsersService {
                     create: {
                         employeeCode: dto.employeeCode,
                         joiningDate: dto.joiningDate ? new Date(dto.joiningDate) : null,
-                        permissionOverrides: [],
                     },
                 },
             },

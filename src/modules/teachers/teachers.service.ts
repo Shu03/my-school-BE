@@ -7,15 +7,10 @@ import {
 
 import { PrismaService } from "@modules/prisma/prisma.service";
 
-import { AssignPresetDto } from "./dto/assign-preset.dto";
 import { CreateAssignmentDto } from "./dto/create-assignment.dto";
-import { CreatePresetDto } from "./dto/create-preset.dto";
-import { UpdatePermissionsDto } from "./dto/update-permissions.dto";
-import { UpdatePresetDto } from "./dto/update-preset.dto";
 import { UpdateTeacherDto } from "./dto/update-teacher.dto";
 import {
     AssignmentBasic,
-    PresetBasic,
     TeacherProfileBasic,
     TeacherProfileWithAssignments,
 } from "./teachers.types";
@@ -24,18 +19,6 @@ import {
 export class TeachersService {
     public constructor(private readonly prisma: PrismaService) {}
 
-    private async assertPresetExists(id: string): Promise<PresetBasic> {
-        const preset = await this.prisma.permissionPreset.findUnique({
-            where: { id },
-        });
-
-        if (!preset) {
-            throw new NotFoundException("Permission preset not found");
-        }
-
-        return preset;
-    }
-
     private async assertTeacherExists(id: string): Promise<TeacherProfileBasic> {
         const teacher = await this.prisma.teacherProfile.findUnique({
             where: { id },
@@ -43,7 +26,6 @@ export class TeachersService {
                 user: {
                     omit: { password: true },
                 },
-                preset: true,
             },
         });
 
@@ -90,95 +72,12 @@ export class TeachersService {
         return assignment;
     }
 
-    /** Preset Services */
-    public async createPreset(dto: CreatePresetDto): Promise<PresetBasic> {
-        const existing = await this.prisma.permissionPreset.findUnique({
-            where: { name: dto.name },
-        });
-
-        if (existing) {
-            throw new BadRequestException(`Permission preset "${dto.name}" already exists`);
-        }
-
-        return this.prisma.permissionPreset.create({
-            data: {
-                name: dto.name,
-                permissions: dto.permissions,
-            },
-        });
-    }
-
-    public async findAllPresets(): Promise<PresetBasic[]> {
-        return this.prisma.permissionPreset.findMany({
-            orderBy: { name: "asc" },
-        });
-    }
-
-    public async findOnePreset(id: string): Promise<PresetBasic> {
-        const preset = await this.prisma.permissionPreset.findUnique({
-            where: { id },
-        });
-
-        if (!preset) {
-            throw new NotFoundException("Permission preset not found");
-        }
-
-        return preset;
-    }
-
-    public async updatePreset(id: string, dto: UpdatePresetDto): Promise<PresetBasic> {
-        if (dto.name === undefined && dto.permissions === undefined) {
-            throw new BadRequestException("At least one field must be provided: name, permissions");
-        }
-
-        await this.assertPresetExists(id);
-
-        if (dto.name !== undefined) {
-            const existing = await this.prisma.permissionPreset.findUnique({
-                where: { name: dto.name },
-            });
-
-            if (existing && existing.id !== id) {
-                throw new BadRequestException(`Permission preset "${dto.name}" already exists`);
-            }
-        }
-
-        return this.prisma.permissionPreset.update({
-            where: { id },
-            data: {
-                ...(dto.name !== undefined && { name: dto.name }),
-                ...(dto.permissions !== undefined && {
-                    permissions: dto.permissions,
-                }),
-            },
-        });
-    }
-
-    public async deletePreset(id: string): Promise<void> {
-        await this.assertPresetExists(id);
-
-        const teacherCount = await this.prisma.teacherProfile.count({
-            where: { presetId: id },
-        });
-
-        if (teacherCount > 0) {
-            throw new BadRequestException(
-                `Cannot delete preset — it is assigned to ${teacherCount} teacher(s). Remove all assignments first.`,
-            );
-        }
-
-        await this.prisma.permissionPreset.delete({
-            where: { id },
-        });
-    }
-
     public async findAllTeachers(): Promise<TeacherProfileBasic[]> {
         return this.prisma.teacherProfile.findMany({
             include: {
                 user: {
                     omit: { password: true },
                 },
-                preset: true,
             },
             orderBy: {
                 user: {
@@ -199,7 +98,6 @@ export class TeachersService {
                 user: {
                     omit: { password: true },
                 },
-                preset: true,
                 classAssignments: {
                     include: {
                         section: true,
@@ -248,60 +146,6 @@ export class TeachersService {
                 user: {
                     omit: { password: true },
                 },
-                preset: true,
-            },
-        });
-    }
-
-    public async assignPreset(id: string, dto: AssignPresetDto): Promise<TeacherProfileBasic> {
-        await this.assertTeacherExists(id);
-        await this.assertPresetExists(dto.presetId);
-
-        return this.prisma.teacherProfile.update({
-            where: { id },
-            data: { presetId: dto.presetId },
-            include: {
-                user: {
-                    omit: { password: true },
-                },
-                preset: true,
-            },
-        });
-    }
-
-    public async removePreset(id: string): Promise<TeacherProfileBasic> {
-        const teacher = await this.assertTeacherExists(id);
-
-        if (!teacher.presetId) {
-            throw new BadRequestException("This teacher has no preset assigned");
-        }
-
-        return this.prisma.teacherProfile.update({
-            where: { id },
-            data: { presetId: null },
-            include: {
-                user: {
-                    omit: { password: true },
-                },
-                preset: true,
-            },
-        });
-    }
-
-    public async updatePermissions(
-        id: string,
-        dto: UpdatePermissionsDto,
-    ): Promise<TeacherProfileBasic> {
-        await this.assertTeacherExists(id);
-
-        return this.prisma.teacherProfile.update({
-            where: { id },
-            data: { permissionOverrides: dto.permissionOverrides },
-            include: {
-                user: {
-                    omit: { password: true },
-                },
-                preset: true,
             },
         });
     }

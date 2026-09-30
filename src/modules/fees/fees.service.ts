@@ -10,15 +10,11 @@ import { EnrollmentStatus, FeeRecordStatus, Prisma, Role } from "@prisma/client"
 
 import {
     ERROR_FEE_FORBIDDEN_SCOPE,
-    ERROR_FEE_INSUFFICIENT_PERMISSIONS,
     ERROR_FEE_RECORD_NOT_FOUND,
     ERROR_FEE_STRUCTURE_ALREADY_EXISTS,
     ERROR_FEE_STRUCTURE_EMPTY_UPDATE,
     ERROR_FEE_STRUCTURE_NOT_FOUND,
     ERROR_FEE_STUDENT_PROFILE_NOT_FOUND,
-    ERROR_FEE_TEACHER_NO_ACCESS_TO_STUDENT,
-    ERROR_FEE_TEACHER_PROFILE_NOT_FOUND,
-    PERMISSION_FEES_MANAGE,
 } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years";
@@ -152,19 +148,6 @@ export class FeesService {
         return { ...record, amountPaid };
     }
 
-    private async resolveTeacherProfileId(userId: string): Promise<string> {
-        const profile = await this.prisma.teacherProfile.findUnique({
-            where: { userId },
-            select: { id: true },
-        });
-
-        if (!profile) {
-            throw new ForbiddenException(ERROR_FEE_TEACHER_PROFILE_NOT_FOUND);
-        }
-
-        return profile.id;
-    }
-
     private async resolveStudentProfileId(userId: string): Promise<string> {
         const profile = await this.prisma.studentProfile.findUnique({
             where: { userId },
@@ -176,50 +159,6 @@ export class FeesService {
         }
 
         return profile.id;
-    }
-
-    private async getTeacherClassIds(teacherProfileId: string): Promise<string[]> {
-        const teacherProfile = await this.prisma.teacherProfile.findUnique({
-            where: { id: teacherProfileId },
-            select: {
-                classAssignments: { select: { sectionId: true } },
-            },
-        });
-
-        if (!teacherProfile) {
-            throw new ForbiddenException(ERROR_FEE_TEACHER_PROFILE_NOT_FOUND);
-        }
-
-        return [...teacherProfile.classAssignments.map((assignment) => assignment.sectionId)];
-    }
-
-    private async assertTeacherHasAccessToStudent(
-        teacherProfileId: string,
-        studentId: string,
-    ): Promise<void> {
-        const teacherClassIds = await this.getTeacherClassIds(teacherProfileId);
-
-        const enrollment = await this.prisma.studentEnrollment.findFirst({
-            where: {
-                studentId,
-                status: EnrollmentStatus.ACTIVE,
-                sectionId: { in: teacherClassIds },
-            },
-            select: { id: true },
-        });
-
-        if (!enrollment) {
-            throw new ForbiddenException(ERROR_FEE_TEACHER_NO_ACCESS_TO_STUDENT);
-        }
-    }
-
-    private assertTeacherHasFeesPermission(requestingUser: JwtPayload): void {
-        if (
-            requestingUser.role === Role.TEACHER &&
-            !requestingUser.permissions.includes(PERMISSION_FEES_MANAGE)
-        ) {
-            throw new ForbiddenException(ERROR_FEE_INSUFFICIENT_PERMISSIONS);
-        }
     }
 
     private async attachAmountPaid(
@@ -427,28 +366,6 @@ export class FeesService {
         if (requestingUser.role === Role.STUDENT) {
             const studentId = await this.resolveStudentProfileId(requestingUser.sub);
             where.studentId = studentId;
-        } else if (requestingUser.role === Role.TEACHER) {
-            this.assertTeacherHasFeesPermission(requestingUser);
-
-            const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-            const teacherSectionIds = await this.getTeacherClassIds(teacherProfileId);
-
-            const sectionFilter =
-                dto.sectionId !== undefined
-                    ? teacherSectionIds.includes(dto.sectionId)
-                        ? [dto.sectionId]
-                        : []
-                    : teacherSectionIds;
-
-            where.student = {
-                enrollments: {
-                    some: {
-                        academicYearId,
-                        status: EnrollmentStatus.ACTIVE,
-                        sectionId: { in: sectionFilter },
-                    },
-                },
-            };
         } else if (dto.sectionId !== undefined) {
             where.student = {
                 enrollments: {
@@ -494,8 +411,6 @@ export class FeesService {
     ): Promise<FeeRecordBasic> {
         await this.assertFeeRecordExists(feeRecordId);
 
-        this.assertTeacherHasFeesPermission(requestingUser);
-
         await this.prisma.feePayment.create({
             data: {
                 feeRecordId,
@@ -535,10 +450,6 @@ export class FeesService {
             if (ownStudentId !== studentId) {
                 throw new ForbiddenException(ERROR_FEE_FORBIDDEN_SCOPE);
             }
-        } else if (requestingUser.role === Role.TEACHER) {
-            this.assertTeacherHasFeesPermission(requestingUser);
-            const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-            await this.assertTeacherHasAccessToStudent(teacherProfileId, studentId);
         }
 
         const records = await this.prisma.feeRecord.findMany({
@@ -563,11 +474,6 @@ export class FeesService {
             if (record.studentId !== studentId) {
                 throw new ForbiddenException(ERROR_FEE_FORBIDDEN_SCOPE);
             }
-            return;
         }
-
-        this.assertTeacherHasFeesPermission(requestingUser);
-        const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-        await this.assertTeacherHasAccessToStudent(teacherProfileId, record.studentId);
     }
 }

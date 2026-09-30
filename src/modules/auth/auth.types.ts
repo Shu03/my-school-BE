@@ -3,7 +3,6 @@ import { Role } from "@prisma/client";
 export type JwtPayload = {
     sub: string;
     role: Role;
-    permissions: string[];
     type: "access" | "first_login";
     iat?: number;
     exp?: number;

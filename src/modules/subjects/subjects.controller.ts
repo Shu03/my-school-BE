@@ -22,8 +22,7 @@ import {
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_SUBJECT_MANAGE } from "@common/constants";
-import { Permissions, Roles } from "@common/decorators";
+import { Roles } from "@common/decorators";
 
 import { CreateSubjectDto } from "./dto/create-subject.dto";
 import { ListSubjectsDto } from "./dto/list-subjects.dto";
@@ -37,8 +36,7 @@ export class SubjectsController {
     public constructor(private readonly subjectsService: SubjectsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_SUBJECT_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Create a new subject" })
     @ApiCreatedResponse({ description: "Subject created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or name/code taken" })
@@ -66,8 +64,7 @@ export class SubjectsController {
     }
 
     @Patch(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_SUBJECT_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Update subject name, code or description" })
     @ApiOkResponse({ description: "Subject updated successfully" })
     @ApiNotFoundResponse({ description: "Subject not found" })

@@ -16,7 +16,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 config();
 
-const KEEP_ADMIN_MOBILE = "9999999999";
+const KEEP_ADMIN_MOBILE = "8762224006";
 
 const prisma = new PrismaClient({
     adapter: new PrismaPg({
@@ -41,6 +41,14 @@ async function main(): Promise<void> {
 
     console.log(`✅ Found admin to keep: ${admin.id} (${admin.firstName} ${admin.lastName})`);
     console.log("🗑️  Starting full wipe (children before parents)...\n");
+
+    // ── Accounts ──────────────────────────────────────────
+    await prisma.accountBill.deleteMany({});
+    console.log("  ✓ account_bills");
+    await prisma.accountWithdrawal.deleteMany({});
+    console.log("  ✓ account_withdrawals");
+    await prisma.accountDeposit.deleteMany({});
+    console.log("  ✓ account_deposits");
 
     // ── Fees ──────────────────────────────────────────────
     await prisma.feePayment.deleteMany({});
@@ -67,6 +75,12 @@ async function main(): Promise<void> {
     // ── Attendance ────────────────────────────────────────
     await prisma.attendance.deleteMany({});
     console.log("  ✓ attendance");
+    await prisma.attendanceDay.deleteMany({});
+    console.log("  ✓ attendance_days");
+
+    // ── Access requests ───────────────────────────────────
+    await prisma.accessRequest.deleteMany({});
+    console.log("  ✓ access_requests");
 
     // ── Holidays ──────────────────────────────────────────
     await prisma.holiday.deleteMany({});
@@ -85,18 +99,14 @@ async function main(): Promise<void> {
     console.log("  ✓ teacher_profiles");
 
     // ── Academic structure ────────────────────────────────
-    await prisma.class.deleteMany({});
-    console.log("  ✓ classes");
+    await prisma.section.deleteMany({});
+    console.log("  ✓ sections");
     await prisma.subject.deleteMany({});
     console.log("  ✓ subjects");
     await prisma.term.deleteMany({});
     console.log("  ✓ terms");
     await prisma.academicYear.deleteMany({});
     console.log("  ✓ academic_years");
-
-    // ── Permission presets ────────────────────────────────
-    await prisma.permissionPreset.deleteMany({});
-    console.log("  ✓ permission_presets");
 
     // ── School settings ───────────────────────────────────
     await prisma.schoolSettings.deleteMany({});

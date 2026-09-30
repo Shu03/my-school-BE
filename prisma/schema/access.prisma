@@ -1,0 +1,43 @@
+enum AccessType {
+  HOMEWORK
+  MARKS
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REVOKED
+}
+
+model AccessRequest {
+  id            String              @id @default(uuid())
+  requesterId   String
+  type          AccessType
+  status        AccessRequestStatus @default(PENDING)
+  sectionId     String?
+  subjectId     String?
+  reason        String?
+  requestedById String
+  reviewedById  String?
+  reviewedAt    DateTime?
+  reviewRemarks String?
+  revokedById   String?
+  revokedAt     DateTime?
+  revokeRemarks String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  // Relations
+  requester   User     @relation("AccessRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requestedBy User     @relation("AccessRequestRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?    @relation("AccessRequestReviewedBy", fields: [reviewedById], references: [id])
+  revokedBy   User?    @relation("AccessRequestRevokedBy", fields: [revokedById], references: [id])
+  section     Section? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subject     Subject? @relation(fields: [subjectId], references: [id])
+
+  @@index([requesterId, status])
+  @@index([sectionId, subjectId, type, status])
+  @@map("access_requests")
+}

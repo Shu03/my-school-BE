@@ -45,13 +45,11 @@ export class AuthService {
     private signAccessToken(
         userId: string,
         role: Role,
-        permissions: string[],
         type: "access" | "first_login" = TOKEN_TYPE_ACCESS,
     ): string {
         const payload: JwtPayload = {
             sub: userId,
             role,
-            permissions,
             type,
         };
 
@@ -93,7 +91,6 @@ export class AuthService {
         // Step 1 — find user
         const user = await this.prisma.user.findUnique({
             where: { mobileNumber: dto.mobileNumber },
-            include: { teacherProfile: true },
         });
 
         // Steps 2 + 3 — validate credentials (same error for both)
@@ -117,7 +114,6 @@ export class AuthService {
             const firstLoginToken = this.signAccessToken(
                 user.id,
                 user.role,
-                [],
                 TOKEN_TYPE_FIRST_LOGIN,
             );
 
@@ -127,17 +123,14 @@ export class AuthService {
             };
         }
 
-        // Step 6 — get effective permissions for teachers
-        const permissions = await this.getEffectivePermissions(user.teacherProfile);
-
-        // Step 7 — sign tokens
-        const accessToken = this.signAccessToken(user.id, user.role, permissions);
+        // Step 6 — sign tokens
+        const accessToken = this.signAccessToken(user.id, user.role);
 
         const family = crypto.randomUUID();
         const refreshToken = this.signRefreshToken(user.id, family);
         const tokenHash = hashToken(refreshToken);
 
-        // Step 8 — enforce session limit + store refresh token atomically
+        // Step 7 — enforce session limit + store refresh token atomically
         const expiresIn = this.config.get<string>("jwt.refreshExpiresIn") ?? "7d";
         const expiresAt = this.getTokenExpiry(expiresIn);
 
@@ -180,28 +173,6 @@ export class AuthService {
         };
     }
 
-    private async getEffectivePermissions(
-        teacherProfile: { presetId: string | null; permissionOverrides: string[] } | null,
-    ): Promise<string[]> {
-        if (!teacherProfile) return [];
-
-        if (!teacherProfile.presetId) {
-            return teacherProfile.permissionOverrides;
-        }
-
-        const preset = await this.prisma.permissionPreset.findUnique({
-            where: { id: teacherProfile.presetId },
-        });
-
-        if (!preset) return teacherProfile.permissionOverrides;
-
-        // Additive merge only — permissionOverrides adds to preset permissions.
-        // To remove a preset permission, update the preset itself or remove the preset entirely.
-        const merged = new Set([...preset.permissions, ...teacherProfile.permissionOverrides]);
-
-        return Array.from(merged);
-    }
-
     // Supports d (days), h (hours), m (minutes) only.
     // Defaults to 7 days for unrecognized units.
     private getTokenExpiry(expiry: string): Date {
@@ -242,13 +213,7 @@ export class AuthService {
         const tokenHash = hashToken(dto.refreshToken);
         const storedToken = await this.prisma.refreshToken.findUnique({
             where: { tokenHash },
-            include: {
-                user: {
-                    include: {
-                        teacherProfile: true,
-                    },
-                },
-            },
+            include: { user: true },
         });
 
         // Step 4 — reuse detection
@@ -284,16 +249,13 @@ export class AuthService {
             throw new UnauthorizedException("Invalid refresh token");
         }
 
-        // Step 7 — get permissions
-        const permissions = await this.getEffectivePermissions(user.teacherProfile);
-
-        // Step 8 — issue new tokens
-        const accessToken = this.signAccessToken(user.id, user.role, permissions);
+        // Step 7 — issue new tokens
+        const accessToken = this.signAccessToken(user.id, user.role);
 
         const newRefreshToken = this.signRefreshToken(user.id, storedToken.family);
         const newTokenHash = hashToken(newRefreshToken);
 
-        // Step 9 — rotate — revoke old, store new atomically
+        // Step 8 — rotate — revoke old, store new atomically
         const expiresIn = this.config.get<string>("jwt.refreshExpiresIn") ?? "7d";
         const expiresAt = this.getTokenExpiry(expiresIn);
 
@@ -327,7 +289,6 @@ export class AuthService {
         // Step 1 — get user
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            include: { teacherProfile: true },
         });
 
         if (!user || !user.isActive) {
@@ -373,9 +334,7 @@ export class AuthService {
         await this.revokeAllUserTokens(userId);
 
         // Step 7 — issue fresh tokens
-        const permissions = await this.getEffectivePermissions(user.teacherProfile);
-
-        const accessToken = this.signAccessToken(user.id, user.role, permissions);
+        const accessToken = this.signAccessToken(user.id, user.role);
 
         const family = crypto.randomUUID();
         const refreshToken = this.signRefreshToken(user.id, family);

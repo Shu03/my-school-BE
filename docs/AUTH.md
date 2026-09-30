@@ -8,11 +8,11 @@ JWT-based authentication with **dual-token** strategy (access + refresh) and a *
 
 ## Token Types
 
-| Token       | Secret               | TTL | Payload                                            | Purpose                        |
-| ----------- | -------------------- | --- | -------------------------------------------------- | ------------------------------ |
-| Access      | `JWT_ACCESS_SECRET`  | 15m | `sub`, `role`, `permissions`, `type:"access"`      | API authorization              |
-| First Login | `JWT_ACCESS_SECRET`  | 15m | `sub`, `role`, `permissions`, `type:"first_login"` | Force password change only     |
-| Refresh     | `JWT_REFRESH_SECRET` | 7d  | `sub`, `family`, `type:"refresh"`                  | Obtain new access/refresh pair |
+| Token       | Secret               | TTL | Payload                             | Purpose                        |
+| ----------- | -------------------- | --- | ----------------------------------- | ------------------------------ |
+| Access      | `JWT_ACCESS_SECRET`  | 15m | `sub`, `role`, `type:"access"`      | API authorization              |
+| First Login | `JWT_ACCESS_SECRET`  | 15m | `sub`, `role`, `type:"first_login"` | Force password change only     |
+| Refresh     | `JWT_REFRESH_SECRET` | 7d  | `sub`, `family`, `type:"refresh"`   | Obtain new access/refresh pair |
 
 ---
 

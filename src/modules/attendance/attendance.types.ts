@@ -1,16 +1,27 @@
-import { Prisma } from "@prisma/client";
+export type AttendanceDayStatus = "PRESENT" | "ABSENT";
 
-export type AttendanceRecord = Prisma.AttendanceGetPayload<{
-    include: {
-        student: {
-            include: {
-                user: {
-                    omit: { password: true };
-                };
-            };
-        };
-    };
-}>;
+export type AttendanceDayStudent = {
+    studentId: string;
+    rollNumber: string;
+    firstName: string;
+    lastName: string;
+    status: AttendanceDayStatus | null;
+};
+
+export type AttendanceDayView = {
+    sectionId: string;
+    date: string;
+    isTaken: boolean;
+    markedBy: { id: string; firstName: string; lastName: string } | null;
+    markedAt: Date | null;
+    students: AttendanceDayStudent[];
+};
+
+export type StudentAttendanceItem = {
+    date: string;
+    sectionId: string;
+    status: AttendanceDayStatus;
+};
 
 export type AttendanceSummaryItem = {
     studentId: string;
@@ -20,10 +31,4 @@ export type AttendanceSummaryItem = {
     present: number;
     absent: number;
     percentage: number;
-};
-
-export type BulkMarkResult = {
-    marked: number;
-    date: string;
-    sectionId: string;
 };

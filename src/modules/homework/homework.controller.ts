@@ -15,8 +15,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_HOMEWORK_MANAGE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
@@ -33,7 +32,6 @@ export class HomeworkController {
 
     @Post()
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_HOMEWORK_MANAGE)
     public create(
         @Body() dto: CreateHomeworkDto,
         @CurrentUser() user: JwtPayload,
@@ -61,7 +59,6 @@ export class HomeworkController {
 
     @Patch(":id")
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_HOMEWORK_MANAGE)
     public update(
         @Param("id", ParseUUIDPipe) id: string,
         @Body() dto: UpdateHomeworkDto,
@@ -72,7 +69,6 @@ export class HomeworkController {
 
     @Delete(":id")
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_HOMEWORK_MANAGE)
     @HttpCode(HttpStatus.OK)
     public delete(
         @Param("id", ParseUUIDPipe) id: string,

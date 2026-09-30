@@ -22,8 +22,7 @@ import {
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_ACADEMIC_YEAR_MANAGE } from "@common/constants";
-import { Permissions, Roles } from "@common/decorators";
+import { Roles } from "@common/decorators";
 
 import { AcademicYearsService } from "./academic-years.service";
 import { CreateAcademicYearDto } from "./dto/create-academic-year.dto";
@@ -38,12 +37,11 @@ export class AcademicYearsController {
     public constructor(private readonly academicYearsService: AcademicYearsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Create a new academic year" })
     @ApiCreatedResponse({ description: "Academic year created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or name taken" })
-    @ApiForbiddenResponse({ description: "Insufficient permissions" })
+    @ApiForbiddenResponse({ description: "Admin only" })
     public async create(
         @Body() dto: CreateAcademicYearDto,
     ): Promise<ReturnType<AcademicYearsService["create"]>> {
@@ -51,8 +49,7 @@ export class AcademicYearsController {
     }
 
     @Get()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "List all academic years" })
     @ApiOkResponse({ description: "Academic years retrieved successfully" })
     public async findAll(): Promise<ReturnType<AcademicYearsService["findAll"]>> {
@@ -68,8 +65,7 @@ export class AcademicYearsController {
     }
 
     @Get(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Get a single academic year with terms" })
     @ApiOkResponse({ description: "Academic year retrieved successfully" })
     @ApiNotFoundResponse({ description: "Academic year not found" })
@@ -80,8 +76,7 @@ export class AcademicYearsController {
     }
 
     @Patch(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Update academic year" })
     @ApiOkResponse({ description: "Academic year updated successfully" })
     @ApiNotFoundResponse({ description: "Academic year not found" })
@@ -107,8 +102,7 @@ export class AcademicYearsController {
     }
 
     @Post(":id/terms")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Create a term within an academic year" })
     @ApiCreatedResponse({ description: "Term created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or dates out of bounds" })
@@ -131,8 +125,7 @@ export class AcademicYearsController {
     }
 
     @Patch(":id/terms/:termId")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ACADEMIC_YEAR_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Update a term" })
     @ApiOkResponse({ description: "Term updated successfully" })
     @ApiNotFoundResponse({ description: "Term not found" })

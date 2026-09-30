@@ -30,6 +30,14 @@ model User {
   studentProfile StudentProfile?
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
   recordedFeePayments FeePayment[] @relation("FeePaymentRecordedBy")
+  recordedAccountDeposits AccountDeposit[] @relation("AccountDepositRecordedBy")
+  recordedAccountWithdrawals AccountWithdrawal[] @relation("AccountWithdrawalRecordedBy")
+  recordedAccountBills AccountBill[] @relation("AccountBillRecordedBy")
+  markedAttendanceDays AttendanceDay[] @relation("AttendanceDayMarkedBy")
+  accessRequests       AccessRequest[] @relation("AccessRequestRequester")
+  createdAccessRequests  AccessRequest[] @relation("AccessRequestRequestedBy")
+  reviewedAccessRequests AccessRequest[] @relation("AccessRequestReviewedBy")
+  revokedAccessRequests  AccessRequest[] @relation("AccessRequestRevokedBy")
 
   @@map("users")
 }

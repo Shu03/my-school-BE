@@ -5,28 +5,37 @@ import {
     NotFoundException,
 } from "@nestjs/common";
 
-import { AttendanceStatus, EnrollmentStatus, Role, StudentEnrollment } from "@prisma/client";
-import { eachDayOfInterval, endOfMonth, format, getDay, parseISO, startOfMonth } from "date-fns";
+import { AcademicYear, EnrollmentStatus, Prisma, Role, Section } from "@prisma/client";
 
 import {
-    ERROR_ATTENDANCE_DATE_NOT_TODAY,
+    ERROR_ATTENDANCE_DAY_NOT_TAKEN,
     ERROR_ATTENDANCE_FORBIDDEN_SCOPE,
+    ERROR_ATTENDANCE_FUTURE_DATE,
+    ERROR_ATTENDANCE_NOT_CLASS_TEACHER,
     ERROR_ATTENDANCE_NOT_SCHOOL_DAY,
+    ERROR_ATTENDANCE_OUTSIDE_ACADEMIC_YEAR,
+    ERROR_ATTENDANCE_SECTION_NOT_CURRENT_YEAR,
+    ERROR_ATTENDANCE_SECTION_NOT_FOUND,
     ERROR_STUDENT_NOT_ENROLLED,
-    ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS,
-    SCHOOL_TIMEZONE,
 } from "@common/constants";
+import { getTodayInSchoolTimezone } from "@common/utils";
 
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { JwtPayload } from "@modules/auth";
 import { PrismaService } from "@modules/prisma/prisma.service";
+import { AccessPolicyService } from "@modules/request-access";
 import { SchoolService } from "@modules/school/school.service";
 
-import { AttendanceRecord, AttendanceSummaryItem, BulkMarkResult } from "./attendance.types";
-import { BulkMarkAttendanceDto } from "./dto/bulk-mark-attendance.dto";
+import {
+    AttendanceDayView,
+    AttendanceSummaryItem,
+    StudentAttendanceItem,
+} from "./attendance.types";
 import { GetAttendanceSummaryDto } from "./dto/get-attendance-summary.dto";
-import { GetAttendanceDto } from "./dto/get-attendance.dto";
 import { GetStudentAttendanceDto } from "./dto/get-student-attendance.dto";
+import { SaveAttendanceDayDto } from "./dto/save-attendance-day.dto";
+
+const toDateOnly = (date: Date): string => date.toISOString().slice(0, 10);
 
 @Injectable()
 export class AttendanceService {
@@ -34,30 +43,119 @@ export class AttendanceService {
         private readonly prisma: PrismaService,
         private readonly schoolService: SchoolService,
         private readonly academicYearsService: AcademicYearsService,
+        private readonly accessPolicy: AccessPolicyService,
     ) {}
 
-    private getTodayInSchoolTimezone(): string {
-        const formatter = new Intl.DateTimeFormat("en-CA", {
-            timeZone: SCHOOL_TIMEZONE,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
+    private async assertSectionExists(sectionId: string): Promise<Section> {
+        const section = await this.prisma.section.findUnique({
+            where: { id: sectionId },
         });
 
-        return formatter.format(new Date());
-    }
-
-    private assertIsToday(date: string): void {
-        if (date.slice(0, 10) !== this.getTodayInSchoolTimezone()) {
-            throw new BadRequestException(ERROR_ATTENDANCE_DATE_NOT_TODAY);
+        if (!section) {
+            throw new NotFoundException(ERROR_ATTENDANCE_SECTION_NOT_FOUND);
         }
+
+        return section;
     }
 
-    private async assertIsSchoolDay(date: string, academicYearId: string): Promise<void> {
-        const isSchoolDay = await this.schoolService.isSchoolDay(date, academicYearId);
+    private async assertSectionInCurrentYear(
+        sectionId: string,
+    ): Promise<{ section: Section; academicYear: AcademicYear }> {
+        const [section, academicYear] = await Promise.all([
+            this.assertSectionExists(sectionId),
+            this.academicYearsService.findCurrent(),
+        ]);
+
+        if (section.academicYearId !== academicYear.id) {
+            throw new BadRequestException(ERROR_ATTENDANCE_SECTION_NOT_CURRENT_YEAR);
+        }
+
+        return { section, academicYear };
+    }
+
+    private async assertValidAttendanceDate(
+        date: string,
+        academicYear: AcademicYear,
+    ): Promise<void> {
+        if (date > getTodayInSchoolTimezone()) {
+            throw new BadRequestException(ERROR_ATTENDANCE_FUTURE_DATE);
+        }
+
+        const yearStart = toDateOnly(academicYear.startDate);
+        const yearEnd = toDateOnly(academicYear.endDate);
+
+        if (date < yearStart || date > yearEnd) {
+            throw new BadRequestException(
+                ERROR_ATTENDANCE_OUTSIDE_ACADEMIC_YEAR.replace("%s", yearStart).replace(
+                    "%s",
+                    yearEnd,
+                ),
+            );
+        }
+
+        const isSchoolDay = await this.schoolService.isSchoolDay(date, academicYear.id);
 
         if (!isSchoolDay) {
             throw new BadRequestException(ERROR_ATTENDANCE_NOT_SCHOOL_DAY);
+        }
+    }
+
+    private async assertCanManageSection(
+        requestingUser: JwtPayload,
+        sectionId: string,
+    ): Promise<void> {
+        if (requestingUser.role === Role.ADMIN) {
+            return;
+        }
+
+        const isClassTeacher = await this.accessPolicy.isClassTeacher(
+            requestingUser.sub,
+            sectionId,
+        );
+
+        if (!isClassTeacher) {
+            throw new ForbiddenException(ERROR_ATTENDANCE_NOT_CLASS_TEACHER);
+        }
+    }
+
+    private async assertCanViewSection(
+        requestingUser: JwtPayload,
+        sectionId: string,
+    ): Promise<void> {
+        if (requestingUser.role === Role.ADMIN) {
+            return;
+        }
+
+        const isAssigned = await this.accessPolicy.isAssignedToSection(
+            requestingUser.sub,
+            sectionId,
+        );
+
+        if (!isAssigned) {
+            throw new ForbiddenException(ERROR_ATTENDANCE_FORBIDDEN_SCOPE);
+        }
+    }
+
+    private async assertAbsenteesEnrolled(
+        studentIds: string[],
+        sectionId: string,
+        academicYearId: string,
+    ): Promise<void> {
+        if (studentIds.length === 0) {
+            return;
+        }
+
+        const enrolledCount = await this.prisma.studentEnrollment.count({
+            where: {
+                sectionId,
+                academicYearId,
+                status: EnrollmentStatus.ACTIVE,
+                studentId: { in: studentIds },
+            },
+        });
+
+        if (enrolledCount !== studentIds.length) {
+            throw new BadRequestException(ERROR_STUDENT_NOT_ENROLLED);
         }
     }
 
@@ -79,35 +177,6 @@ export class AttendanceService {
         return profile?.id ?? null;
     }
 
-    private async assertTeacherAssignedToClass(
-        teacherProfileId: string,
-        sectionId: string,
-    ): Promise<void> {
-        const assignment = await this.prisma.teacherClassAssignment.findFirst({
-            where: {
-                teacherId: teacherProfileId,
-                sectionId,
-            },
-        });
-
-        if (!assignment) {
-            throw new ForbiddenException(ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS);
-        }
-    }
-
-    private async getActiveEnrollments(
-        sectionId: string,
-        academicYearId: string,
-    ): Promise<StudentEnrollment[]> {
-        return this.prisma.studentEnrollment.findMany({
-            where: {
-                sectionId,
-                academicYearId,
-                status: EnrollmentStatus.ACTIVE,
-            },
-        });
-    }
-
     private async assertCanViewStudent(
         studentId: string,
         requestingUser: JwtPayload,
@@ -126,21 +195,16 @@ export class AttendanceService {
             return;
         }
 
-        const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-
-        if (!teacherProfileId) {
-            throw new ForbiddenException(ERROR_ATTENDANCE_FORBIDDEN_SCOPE);
-        }
-
         const sharedAssignment = await this.prisma.teacherClassAssignment.findFirst({
             where: {
-                teacherId: teacherProfileId,
+                teacher: { userId: requestingUser.sub },
                 section: {
                     enrollments: {
                         some: { studentId },
                     },
                 },
             },
+            select: { id: true },
         });
 
         if (!sharedAssignment) {
@@ -148,121 +212,153 @@ export class AttendanceService {
         }
     }
 
-    private async countWorkingDays(
-        start: Date,
-        end: Date,
-        academicYearId: string,
-    ): Promise<number> {
-        const settings = await this.schoolService.getSettings();
+    private async buildDayView(section: Section, date: string): Promise<AttendanceDayView> {
+        const attendanceDate = new Date(date);
 
-        const holidays = await this.prisma.holiday.findMany({
-            where: {
-                academicYearId,
-                date: { gte: start, lte: end },
-            },
-        });
-
-        const holidayDates = new Set(holidays.map((holiday) => format(holiday.date, "yyyy-MM-dd")));
-
-        return eachDayOfInterval({ start, end }).filter((day) => {
-            if (settings.weeklyOffDays.includes(getDay(day))) {
-                return false;
-            }
-
-            return !holidayDates.has(format(day, "yyyy-MM-dd"));
-        }).length;
-    }
-
-    public async mark(
-        dto: BulkMarkAttendanceDto,
-        userId: string,
-        role: Role,
-    ): Promise<BulkMarkResult> {
-        this.assertIsToday(dto.date);
-
-        const currentYear = await this.academicYearsService.findCurrent();
-        const academicYearId = currentYear.id;
-
-        await this.assertIsSchoolDay(dto.date, academicYearId);
-
-        let markedById: string | null = null;
-
-        if (role === Role.TEACHER) {
-            const teacherProfileId = await this.resolveTeacherProfileId(userId);
-
-            if (!teacherProfileId) {
-                throw new ForbiddenException(ERROR_TEACHER_NOT_ASSIGNED_TO_CLASS);
-            }
-
-            await this.assertTeacherAssignedToClass(teacherProfileId, dto.sectionId);
-            markedById = teacherProfileId;
-        }
-
-        const enrollments = await this.getActiveEnrollments(dto.sectionId, academicYearId);
-        const enrolledStudentIds = new Set(enrollments.map((enrollment) => enrollment.studentId));
-        const recordStudentIds = dto.records.map((record) => record.studentId);
-
-        const allEnrolled = recordStudentIds.every((studentId) =>
-            enrolledStudentIds.has(studentId),
-        );
-
-        if (!allEnrolled) {
-            throw new BadRequestException(ERROR_STUDENT_NOT_ENROLLED);
-        }
-
-        const date = new Date(dto.date);
-
-        await this.prisma.$transaction([
-            this.prisma.attendance.deleteMany({
-                where: {
-                    sectionId: dto.sectionId,
-                    date,
-                    studentId: { in: recordStudentIds },
+        const [day, enrollments, absences] = await Promise.all([
+            this.prisma.attendanceDay.findUnique({
+                where: { sectionId_date: { sectionId: section.id, date: attendanceDate } },
+                include: {
+                    markedBy: { select: { id: true, firstName: true, lastName: true } },
                 },
             }),
+            this.prisma.studentEnrollment.findMany({
+                where: {
+                    sectionId: section.id,
+                    academicYearId: section.academicYearId,
+                    status: EnrollmentStatus.ACTIVE,
+                },
+                include: {
+                    student: {
+                        include: {
+                            user: { select: { firstName: true, lastName: true } },
+                        },
+                    },
+                },
+                orderBy: { rollNumber: "asc" },
+            }),
+            this.prisma.attendance.findMany({
+                where: { sectionId: section.id, date: attendanceDate },
+                select: { studentId: true },
+            }),
+        ]);
+
+        const absentStudentIds = new Set(absences.map((absence) => absence.studentId));
+
+        return {
+            sectionId: section.id,
+            date,
+            isTaken: day !== null,
+            markedBy: day?.markedBy ?? null,
+            markedAt: day?.updatedAt ?? null,
+            students: enrollments.map((enrollment) => {
+                let status: AttendanceDayView["students"][number]["status"] = null;
+
+                if (day !== null) {
+                    status = absentStudentIds.has(enrollment.studentId) ? "ABSENT" : "PRESENT";
+                }
+
+                return {
+                    studentId: enrollment.studentId,
+                    rollNumber: enrollment.rollNumber,
+                    firstName: enrollment.student.user.firstName,
+                    lastName: enrollment.student.user.lastName,
+                    status,
+                };
+            }),
+        };
+    }
+
+    public async saveDay(
+        sectionId: string,
+        date: string,
+        dto: SaveAttendanceDayDto,
+        requestingUser: JwtPayload,
+    ): Promise<AttendanceDayView> {
+        const { section, academicYear } = await this.assertSectionInCurrentYear(sectionId);
+        await this.assertCanManageSection(requestingUser, sectionId);
+        await this.assertValidAttendanceDate(date, academicYear);
+        await this.assertAbsenteesEnrolled(dto.absentStudentIds, sectionId, academicYear.id);
+
+        const teacherProfileId =
+            requestingUser.role === Role.TEACHER
+                ? await this.resolveTeacherProfileId(requestingUser.sub)
+                : null;
+        const attendanceDate = new Date(date);
+
+        await this.prisma.$transaction([
+            this.prisma.attendanceDay.upsert({
+                where: { sectionId_date: { sectionId, date: attendanceDate } },
+                create: {
+                    sectionId,
+                    academicYearId: academicYear.id,
+                    date: attendanceDate,
+                    markedById: requestingUser.sub,
+                },
+                update: { markedById: requestingUser.sub },
+            }),
+            this.prisma.attendance.deleteMany({
+                where: { sectionId, date: attendanceDate },
+            }),
             this.prisma.attendance.createMany({
-                data: dto.records.map((record) => ({
-                    studentId: record.studentId,
-                    sectionId: dto.sectionId,
-                    academicYearId,
-                    date,
-                    status: record.status,
-                    markedById,
+                data: dto.absentStudentIds.map((studentId) => ({
+                    studentId,
+                    sectionId,
+                    academicYearId: academicYear.id,
+                    date: attendanceDate,
+                    markedById: teacherProfileId,
                 })),
             }),
         ]);
 
-        return {
-            marked: dto.records.length,
-            date: dto.date,
-            sectionId: dto.sectionId,
-        };
+        return this.buildDayView(section, date);
     }
 
-    public async getClassAttendance(dto: GetAttendanceDto): Promise<AttendanceRecord[]> {
-        return this.prisma.attendance.findMany({
-            where: {
-                sectionId: dto.sectionId,
-                date: new Date(dto.date),
-            },
-            include: {
-                student: {
-                    include: {
-                        user: {
-                            omit: { password: true },
-                        },
-                    },
-                },
-            },
-            orderBy: { createdAt: "asc" },
+    public async getDay(
+        sectionId: string,
+        date: string,
+        requestingUser: JwtPayload,
+    ): Promise<AttendanceDayView> {
+        const section = await this.assertSectionExists(sectionId);
+        await this.assertCanViewSection(requestingUser, sectionId);
+
+        return this.buildDayView(section, date);
+    }
+
+    public async deleteDay(
+        sectionId: string,
+        date: string,
+        requestingUser: JwtPayload,
+    ): Promise<void> {
+        await this.assertSectionInCurrentYear(sectionId);
+        await this.assertCanManageSection(requestingUser, sectionId);
+
+        const attendanceDate = new Date(date);
+
+        const day = await this.prisma.attendanceDay.findUnique({
+            where: { sectionId_date: { sectionId, date: attendanceDate } },
+            select: { id: true },
         });
+
+        if (!day) {
+            throw new NotFoundException(ERROR_ATTENDANCE_DAY_NOT_TAKEN.replace("%s", date));
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.attendance.deleteMany({
+                where: { sectionId, date: attendanceDate },
+            }),
+            this.prisma.attendanceDay.delete({
+                where: { id: day.id },
+            }),
+        ]);
     }
 
     public async getStudentAttendance(
         studentId: string,
         dto: GetStudentAttendanceDto,
         requestingUser: JwtPayload,
-    ): Promise<AttendanceRecord[]> {
+    ): Promise<StudentAttendanceItem[]> {
         await this.assertCanViewStudent(studentId, requestingUser);
 
         let academicYearId = dto.academicYearId;
@@ -272,88 +368,108 @@ export class AttendanceService {
             academicYearId = current.id;
         }
 
-        return this.prisma.attendance.findMany({
-            where: {
-                studentId,
-                academicYearId,
-                ...((dto.startDate ?? dto.endDate)
-                    ? {
-                          date: {
-                              ...(dto.startDate && { gte: new Date(dto.startDate) }),
-                              ...(dto.endDate && { lte: new Date(dto.endDate) }),
-                          },
-                      }
-                    : {}),
-            },
-            include: {
-                student: {
-                    include: {
-                        user: {
-                            omit: { password: true },
-                        },
-                    },
+        const enrollment = await this.prisma.studentEnrollment.findUnique({
+            where: { studentId_academicYearId: { studentId, academicYearId } },
+            select: { sectionId: true },
+        });
+
+        if (!enrollment) {
+            return [];
+        }
+
+        const dateFilter: Prisma.DateTimeFilter | undefined =
+            (dto.startDate ?? dto.endDate)
+                ? {
+                      ...(dto.startDate && { gte: new Date(dto.startDate) }),
+                      ...(dto.endDate && { lte: new Date(dto.endDate) }),
+                  }
+                : undefined;
+
+        const [days, absences] = await Promise.all([
+            this.prisma.attendanceDay.findMany({
+                where: {
+                    sectionId: enrollment.sectionId,
+                    ...(dateFilter && { date: dateFilter }),
                 },
-            },
-            orderBy: { date: "desc" },
+                select: { date: true },
+                orderBy: { date: "desc" },
+            }),
+            this.prisma.attendance.findMany({
+                where: {
+                    studentId,
+                    academicYearId,
+                    ...(dateFilter && { date: dateFilter }),
+                },
+                select: { date: true },
+            }),
+        ]);
+
+        const absentDates = new Set(absences.map((absence) => toDateOnly(absence.date)));
+
+        return days.map((day) => {
+            const date = toDateOnly(day.date);
+
+            return {
+                date,
+                sectionId: enrollment.sectionId,
+                status: absentDates.has(date) ? "ABSENT" : "PRESENT",
+            };
         });
     }
 
-    public async getSummary(dto: GetAttendanceSummaryDto): Promise<AttendanceSummaryItem[]> {
-        const classRecord = await this.prisma.section.findUnique({
-            where: { id: dto.sectionId },
-        });
+    public async getSummary(
+        dto: GetAttendanceSummaryDto,
+        requestingUser: JwtPayload,
+    ): Promise<AttendanceSummaryItem[]> {
+        const section = await this.assertSectionExists(dto.sectionId);
+        await this.assertCanViewSection(requestingUser, dto.sectionId);
 
-        if (!classRecord) {
-            throw new NotFoundException("Class not found");
-        }
+        const [year, month] = dto.month.split("-").map(Number);
+        const monthRange = {
+            gte: new Date(Date.UTC(year, month - 1, 1)),
+            lte: new Date(Date.UTC(year, month, 0)),
+        };
 
-        const academicYearId = classRecord.academicYearId;
-        const monthStart = startOfMonth(parseISO(`${dto.month}-01`));
-        const monthEnd = endOfMonth(monthStart);
-
-        const totalDays = await this.countWorkingDays(monthStart, monthEnd, academicYearId);
-
-        const enrollments = await this.prisma.studentEnrollment.findMany({
-            where: {
-                sectionId: dto.sectionId,
-                academicYearId,
-                status: EnrollmentStatus.ACTIVE,
-            },
-            include: {
-                student: {
-                    include: {
-                        user: {
-                            omit: { password: true },
+        const [takenDays, enrollments, absences] = await Promise.all([
+            this.prisma.attendanceDay.count({
+                where: { sectionId: dto.sectionId, date: monthRange },
+            }),
+            this.prisma.studentEnrollment.findMany({
+                where: {
+                    sectionId: dto.sectionId,
+                    academicYearId: section.academicYearId,
+                    status: EnrollmentStatus.ACTIVE,
+                },
+                include: {
+                    student: {
+                        include: {
+                            user: { select: { firstName: true, lastName: true } },
                         },
                     },
                 },
-            },
-        });
+                orderBy: { rollNumber: "asc" },
+            }),
+            this.prisma.attendance.groupBy({
+                by: ["studentId"],
+                where: { sectionId: dto.sectionId, date: monthRange },
+                _count: { _all: true },
+            }),
+        ]);
 
-        const attendances = await this.prisma.attendance.findMany({
-            where: {
-                sectionId: dto.sectionId,
-                date: { gte: monthStart, lte: monthEnd },
-            },
-        });
+        const absentByStudent = new Map(
+            absences.map((absence) => [absence.studentId, absence._count._all]),
+        );
 
         return enrollments.map((enrollment) => {
-            const studentAttendances = attendances.filter(
-                (attendance) => attendance.studentId === enrollment.studentId,
-            );
-            const present = studentAttendances.filter(
-                (attendance) => attendance.status === AttendanceStatus.PRESENT,
-            ).length;
-            const absent = studentAttendances.filter(
-                (attendance) => attendance.status === AttendanceStatus.ABSENT,
-            ).length;
-            const percentage = totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
+            const absent = absentByStudent.get(enrollment.studentId) ?? 0;
+            const present = takenDays - absent;
+            const percentage = takenDays > 0 ? Math.round((present / takenDays) * 100) : 0;
 
             return {
                 studentId: enrollment.studentId,
                 firstName: enrollment.student.user.firstName,
                 lastName: enrollment.student.user.lastName,
-                totalDays,
+                totalDays: takenDays,
                 present,
                 absent,
                 percentage,

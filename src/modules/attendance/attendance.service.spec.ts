@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { PrismaService } from "@modules/prisma/prisma.service";
+import { AccessPolicyService } from "@modules/request-access";
 import { SchoolService } from "@modules/school/school.service";
 
 import { AttendanceService } from "./attendance.service";
@@ -23,6 +24,10 @@ describe("AttendanceService", () => {
                 },
                 {
                     provide: AcademicYearsService,
+                    useValue: {},
+                },
+                {
+                    provide: AccessPolicyService,
                     useValue: {},
                 },
             ],

@@ -10,11 +10,9 @@ import { Prisma, Role } from "@prisma/client";
 import {
     ERROR_ANNOUNCEMENT_EMPTY_UPDATE,
     ERROR_ANNOUNCEMENT_EXPIRED,
-    ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS,
     ERROR_ANNOUNCEMENT_INVALID_DATE_RANGE,
     ERROR_ANNOUNCEMENT_NOT_CREATOR,
     ERROR_ANNOUNCEMENT_NOT_FOUND,
-    PERMISSION_ANNOUNCEMENTS_MANAGE,
 } from "@common/constants";
 
 import { JwtPayload } from "@modules/auth";
@@ -73,13 +71,6 @@ export class AnnouncementsService {
         dto: CreateAnnouncementDto,
         requestingUser: JwtPayload,
     ): Promise<AnnouncementBasic> {
-        if (
-            requestingUser.role === Role.TEACHER &&
-            !requestingUser.permissions.includes(PERMISSION_ANNOUNCEMENTS_MANAGE)
-        ) {
-            throw new ForbiddenException(ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS);
-        }
-
         const startDate = new Date(dto.startDate);
         const endDate = new Date(dto.endDate);
 
@@ -139,13 +130,6 @@ export class AnnouncementsService {
         const announcement = await this.assertAnnouncementExists(id);
         this.assertCanModify(announcement, requestingUser);
         this.assertNotExpired(announcement);
-
-        if (
-            requestingUser.role === Role.TEACHER &&
-            !requestingUser.permissions.includes(PERMISSION_ANNOUNCEMENTS_MANAGE)
-        ) {
-            throw new ForbiddenException(ERROR_ANNOUNCEMENT_INSUFFICIENT_PERMISSIONS);
-        }
 
         const startDate =
             dto.startDate !== undefined ? new Date(dto.startDate) : announcement.startDate;
