@@ -11,8 +11,7 @@ import {
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_SECTION_MANAGE } from "@common/constants";
-import { Permissions, Roles } from "@common/decorators";
+import { Roles } from "@common/decorators";
 
 import { CreateSectionDto } from "./dto/create-section.dto";
 import { ListSectionsDto } from "./dto/list-sections.dto";
@@ -26,8 +25,7 @@ export class SectionsController {
     public constructor(private readonly sectionsService: SectionsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_SECTION_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Create a new class" })
     @ApiCreatedResponse({ description: "Class created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or name taken" })
@@ -55,8 +53,7 @@ export class SectionsController {
     }
 
     @Patch(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_SECTION_MANAGE)
+    @Roles(Role.ADMIN)
     @ApiOperation({ summary: "Update class name or grade level" })
     @ApiOkResponse({ description: "Class updated successfully" })
     @ApiNotFoundResponse({ description: "Class not found" })

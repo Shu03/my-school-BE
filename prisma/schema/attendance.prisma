@@ -1,19 +1,32 @@
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
+// Marks that attendance was taken for a section on a date; students without an Attendance row that day are present.
+model AttendanceDay {
+  id             String   @id @default(uuid())
+  sectionId      String
+  academicYearId String
+  date           DateTime @db.Date
+  markedById     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  section  Section @relation(fields: [sectionId], references: [id])
+  markedBy User?   @relation("AttendanceDayMarkedBy", fields: [markedById], references: [id])
+
+  @@unique([sectionId, date])
+  @@index([academicYearId])
+  @@map("attendance_days")
 }
 
+// Absence record — only absent students are stored.
 model Attendance {
-  id             String           @id @default(uuid())
+  id             String   @id @default(uuid())
   studentId      String
   sectionId      String
   academicYearId String
-  date           DateTime         @db.Date
-  status         AttendanceStatus
+  date           DateTime @db.Date
   markedById     String?
   periodId       String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   student  StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   section  Section         @relation(fields: [sectionId], references: [id])

@@ -5,24 +5,23 @@ import {
     NotFoundException,
 } from "@nestjs/common";
 
-import { EnrollmentStatus, Prisma, Role } from "@prisma/client";
+import { AccessType, EnrollmentStatus, Prisma, Role } from "@prisma/client";
 
 import {
+    ERROR_HOMEWORK_ACCESS_DENIED,
     ERROR_HOMEWORK_EMPTY_UPDATE,
     ERROR_HOMEWORK_FORBIDDEN_SCOPE,
-    ERROR_HOMEWORK_INSUFFICIENT_PERMISSIONS,
-    ERROR_HOMEWORK_NOT_ASSIGNED,
-    ERROR_HOMEWORK_NOT_CREATOR,
+    ERROR_HOMEWORK_GRANTED_NOT_CREATOR,
     ERROR_HOMEWORK_NOT_FOUND,
     ERROR_HOMEWORK_STUDENT_PROFILE_NOT_FOUND,
     ERROR_HOMEWORK_SUBJECT_GRADE_MISMATCH,
     ERROR_HOMEWORK_TEACHER_PROFILE_NOT_FOUND,
-    PERMISSION_HOMEWORK_MANAGE,
 } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { JwtPayload } from "@modules/auth";
 import { PrismaService } from "@modules/prisma/prisma.service";
+import { AccessPolicyService } from "@modules/request-access";
 
 import { CreateHomeworkDto } from "./dto/create-homework.dto";
 import { ListHomeworkDto } from "./dto/list-homework.dto";
@@ -48,6 +47,7 @@ export class HomeworkService {
     public constructor(
         private readonly prismaService: PrismaService,
         private readonly academicYearsService: AcademicYearsService,
+        private readonly accessPolicy: AccessPolicyService,
     ) {}
 
     private async assertHomeworkExists(id: string): Promise<HomeworkBasic> {
@@ -91,22 +91,20 @@ export class HomeworkService {
         }
     }
 
-    private async assertTeacherAssignedToSubjectClass(
+    private async assertTeacherCanManageSubject(
         userId: string,
         sectionId: string,
         subjectId: string,
     ): Promise<void> {
-        const assignment = await this.prismaService.teacherClassAssignment.findFirst({
-            where: {
-                sectionId,
-                teacher: { userId },
-                OR: [{ subjectId }, { subjectId: null }],
-            },
-            select: { id: true },
-        });
+        const source = await this.accessPolicy.resolveSubjectAccess(
+            userId,
+            AccessType.HOMEWORK,
+            sectionId,
+            subjectId,
+        );
 
-        if (!assignment) {
-            throw new ForbiddenException(ERROR_HOMEWORK_NOT_ASSIGNED);
+        if (!source) {
+            throw new ForbiddenException(ERROR_HOMEWORK_ACCESS_DENIED);
         }
     }
 
@@ -136,13 +134,28 @@ export class HomeworkService {
         return profile.id;
     }
 
-    private assertCanModify(homework: HomeworkBasic, requestingUser: JwtPayload): void {
+    // Assigned teachers may modify any homework of the subject; granted access covers only own homework.
+    private async assertCanModify(
+        homework: HomeworkBasic,
+        requestingUser: JwtPayload,
+    ): Promise<void> {
         if (requestingUser.role === Role.ADMIN) {
             return;
         }
 
-        if (homework.createdBy?.userId !== requestingUser.sub) {
-            throw new ForbiddenException(ERROR_HOMEWORK_NOT_CREATOR);
+        const source = await this.accessPolicy.resolveSubjectAccess(
+            requestingUser.sub,
+            AccessType.HOMEWORK,
+            homework.sectionId,
+            homework.subjectId,
+        );
+
+        if (!source) {
+            throw new ForbiddenException(ERROR_HOMEWORK_ACCESS_DENIED);
+        }
+
+        if (source === "GRANTED" && homework.createdBy?.userId !== requestingUser.sub) {
+            throw new ForbiddenException(ERROR_HOMEWORK_GRANTED_NOT_CREATOR);
         }
     }
 
@@ -162,16 +175,12 @@ export class HomeworkService {
         let createdById: string | null = null;
 
         if (requestingUser.role === Role.TEACHER) {
-            if (!requestingUser.permissions.includes(PERMISSION_HOMEWORK_MANAGE)) {
-                throw new ForbiddenException(ERROR_HOMEWORK_INSUFFICIENT_PERMISSIONS);
-            }
-
-            createdById = await this.resolveTeacherProfileId(requestingUser.sub);
-            await this.assertTeacherAssignedToSubjectClass(
+            await this.assertTeacherCanManageSubject(
                 requestingUser.sub,
                 dto.sectionId,
                 dto.subjectId,
             );
+            createdById = await this.resolveTeacherProfileId(requestingUser.sub);
         }
 
         return this.prismaService.homework.create({
@@ -206,11 +215,21 @@ export class HomeworkService {
         };
 
         if (requestingUser.role === Role.TEACHER) {
-            where.section = {
-                teacherAssignments: {
-                    some: { teacher: { userId: requestingUser.sub } },
+            const grantedScopes = await this.accessPolicy.findApprovedScopes(
+                requestingUser.sub,
+                AccessType.HOMEWORK,
+            );
+
+            where.OR = [
+                {
+                    section: {
+                        teacherAssignments: {
+                            some: { teacher: { userId: requestingUser.sub } },
+                        },
+                    },
                 },
-            };
+                ...grantedScopes,
+            ];
         } else if (requestingUser.role === Role.STUDENT) {
             where.section = {
                 enrollments: {
@@ -234,15 +253,17 @@ export class HomeworkService {
         const homework = await this.assertHomeworkExists(id);
 
         if (requestingUser.role === Role.TEACHER) {
-            const assignment = await this.prismaService.teacherClassAssignment.findFirst({
-                where: {
-                    sectionId: homework.sectionId,
-                    teacher: { userId: requestingUser.sub },
-                },
-                select: { id: true },
-            });
+            const [isAssigned, isGranted] = await Promise.all([
+                this.accessPolicy.isAssignedToSection(requestingUser.sub, homework.sectionId),
+                this.accessPolicy.hasApprovedAccess(
+                    requestingUser.sub,
+                    AccessType.HOMEWORK,
+                    homework.sectionId,
+                    homework.subjectId,
+                ),
+            ]);
 
-            if (!assignment) {
+            if (!isAssigned && !isGranted) {
                 throw new ForbiddenException(ERROR_HOMEWORK_FORBIDDEN_SCOPE);
             }
         } else if (requestingUser.role === Role.STUDENT) {
@@ -274,14 +295,7 @@ export class HomeworkService {
         }
 
         const homework = await this.assertHomeworkExists(id);
-        this.assertCanModify(homework, requestingUser);
-
-        if (
-            requestingUser.role === Role.TEACHER &&
-            !requestingUser.permissions.includes(PERMISSION_HOMEWORK_MANAGE)
-        ) {
-            throw new ForbiddenException(ERROR_HOMEWORK_INSUFFICIENT_PERMISSIONS);
-        }
+        await this.assertCanModify(homework, requestingUser);
 
         return this.prismaService.homework.update({
             where: { id },
@@ -296,7 +310,7 @@ export class HomeworkService {
 
     public async delete(id: string, requestingUser: JwtPayload): Promise<HomeworkBasic> {
         const homework = await this.assertHomeworkExists(id);
-        this.assertCanModify(homework, requestingUser);
+        await this.assertCanModify(homework, requestingUser);
 
         await this.prismaService.homework.delete({ where: { id } });
 

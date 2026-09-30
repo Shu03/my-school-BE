@@ -5,31 +5,28 @@ import {
     NotFoundException,
 } from "@nestjs/common";
 
-import { EnrollmentStatus, ExamStatus, Prisma, Role, TeacherClassRole } from "@prisma/client";
+import { EnrollmentStatus, ExamStatus, Prisma, Role } from "@prisma/client";
 
 import {
     ERROR_EXAM_DISCARDED,
     ERROR_EXAM_DUPLICATE_SUBJECT,
     ERROR_EXAM_EMPTY_UPDATE,
     ERROR_EXAM_FINALIZED,
-    ERROR_EXAM_INSUFFICIENT_PERMISSIONS,
+    ERROR_EXAM_FORBIDDEN_SCOPE,
     ERROR_EXAM_NO_SUBJECTS,
-    ERROR_EXAM_NOT_CLASS_TEACHER,
-    ERROR_EXAM_NOT_CREATOR,
     ERROR_EXAM_NOT_FOUND,
     ERROR_EXAM_SUBJECT_ALREADY_EXISTS,
     ERROR_EXAM_SUBJECT_EMPTY_UPDATE,
     ERROR_EXAM_SUBJECT_GRADE_MISMATCH,
     ERROR_EXAM_SUBJECT_NOT_FOUND,
-    ERROR_EXAM_TEACHER_PROFILE_NOT_FOUND,
     ERROR_EXAM_TERM_NOT_FOUND,
     ERROR_EXAM_TERM_YEAR_MISMATCH,
-    PERMISSION_GRADES_READ,
 } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { JwtPayload } from "@modules/auth";
 import { PrismaService } from "@modules/prisma/prisma.service";
+import { AccessPolicyService } from "@modules/request-access";
 
 import { AddExamSubjectDto } from "./dto/add-exam-subject.dto";
 import { CreateExamDto } from "./dto/create-exam.dto";
@@ -53,6 +50,7 @@ export class ExamsService {
     public constructor(
         private readonly prismaService: PrismaService,
         private readonly academicYearsService: AcademicYearsService,
+        private readonly accessPolicy: AccessPolicyService,
     ) {}
 
     private async assertExamExists(id: string): Promise<ExamBasic> {
@@ -97,53 +95,6 @@ export class ExamsService {
     private assertExamNotDiscarded(exam: ExamBasic): void {
         if (exam.status === ExamStatus.DISCARDED) {
             throw new BadRequestException(ERROR_EXAM_DISCARDED);
-        }
-    }
-
-    private async assertCanFinalize(exam: ExamBasic, requestingUser: JwtPayload): Promise<void> {
-        await this.assertIsCreatorOrAdmin(exam, requestingUser);
-    }
-
-    private async assertIsCreatorOrAdmin(
-        exam: ExamBasic,
-        requestingUser: JwtPayload,
-    ): Promise<void> {
-        if (requestingUser.role === Role.ADMIN) {
-            return;
-        }
-
-        const teacherProfileId = await this.resolveTeacherProfileId(requestingUser.sub);
-
-        if (exam.createdById !== teacherProfileId) {
-            throw new ForbiddenException(ERROR_EXAM_NOT_CREATOR);
-        }
-    }
-
-    private async resolveTeacherProfileId(userId: string): Promise<string> {
-        const profile = await this.prismaService.teacherProfile.findUnique({
-            where: { userId },
-            select: { id: true },
-        });
-
-        if (!profile) {
-            throw new ForbiddenException(ERROR_EXAM_TEACHER_PROFILE_NOT_FOUND);
-        }
-
-        return profile.id;
-    }
-
-    private async assertIsClassTeacherOfClass(sectionId: string, userId: string): Promise<void> {
-        const assignment = await this.prismaService.teacherClassAssignment.findFirst({
-            where: {
-                sectionId,
-                role: TeacherClassRole.CLASS_TEACHER,
-                teacher: { userId },
-            },
-            select: { id: true },
-        });
-
-        if (!assignment) {
-            throw new ForbiddenException(ERROR_EXAM_NOT_CLASS_TEACHER);
         }
     }
 
@@ -209,14 +160,7 @@ export class ExamsService {
         }
     }
 
-    public async create(dto: CreateExamDto, requestingUser: JwtPayload): Promise<ExamBasic> {
-        let createdById: string | null = null;
-
-        if (requestingUser.role === Role.TEACHER) {
-            createdById = await this.resolveTeacherProfileId(requestingUser.sub);
-            await this.assertIsClassTeacherOfClass(dto.sectionId, requestingUser.sub);
-        }
-
+    public async create(dto: CreateExamDto): Promise<ExamBasic> {
         this.assertNoDuplicateSubjects(dto.subjects.map((subject) => subject.subjectId));
         await this.assertSubjectsMatchClassGrade(dto.subjects, dto.sectionId);
 
@@ -237,7 +181,6 @@ export class ExamsService {
                 type: dto.type,
                 sectionId: dto.sectionId,
                 academicYearId,
-                createdById,
                 ...(dto.termId !== undefined && { termId: dto.termId }),
                 examSubjects: {
                     create: dto.subjects.map((subject) => ({
@@ -276,15 +219,7 @@ export class ExamsService {
         };
 
         if (requestingUser.role === Role.TEACHER) {
-            if (!requestingUser.permissions.includes(PERMISSION_GRADES_READ)) {
-                throw new ForbiddenException(ERROR_EXAM_INSUFFICIENT_PERMISSIONS);
-            }
-
-            where.section = {
-                teacherAssignments: {
-                    some: { teacher: { userId: requestingUser.sub } },
-                },
-            };
+            where.section = this.accessPolicy.buildSectionScope(requestingUser.sub);
         } else if (requestingUser.role === Role.STUDENT) {
             where.section = {
                 enrollments: {
@@ -315,20 +250,13 @@ export class ExamsService {
         const exam = await this.assertExamExists(id);
 
         if (requestingUser.role === Role.TEACHER) {
-            if (!requestingUser.permissions.includes(PERMISSION_GRADES_READ)) {
-                throw new ForbiddenException(ERROR_EXAM_INSUFFICIENT_PERMISSIONS);
-            }
+            const canView = await this.accessPolicy.canViewSection(
+                requestingUser.sub,
+                exam.sectionId,
+            );
 
-            const assignment = await this.prismaService.teacherClassAssignment.findFirst({
-                where: {
-                    sectionId: exam.sectionId,
-                    teacher: { userId: requestingUser.sub },
-                },
-                select: { id: true },
-            });
-
-            if (!assignment) {
-                throw new ForbiddenException(ERROR_EXAM_NOT_CREATOR);
+            if (!canView) {
+                throw new ForbiddenException(ERROR_EXAM_FORBIDDEN_SCOPE);
             }
         } else if (requestingUser.role === Role.STUDENT) {
             const enrollment = await this.prismaService.studentEnrollment.findFirst({
@@ -342,7 +270,7 @@ export class ExamsService {
             });
 
             if (!enrollment) {
-                throw new ForbiddenException(ERROR_EXAM_NOT_CREATOR);
+                throw new ForbiddenException(ERROR_EXAM_FORBIDDEN_SCOPE);
             }
         }
 
@@ -379,11 +307,7 @@ export class ExamsService {
         return { ...exam, subjectSummaries };
     }
 
-    public async update(
-        id: string,
-        dto: UpdateExamDto,
-        requestingUser: JwtPayload,
-    ): Promise<ExamBasic> {
+    public async update(id: string, dto: UpdateExamDto): Promise<ExamBasic> {
         if (dto.name === undefined && dto.type === undefined && dto.termId === undefined) {
             throw new BadRequestException(ERROR_EXAM_EMPTY_UPDATE);
         }
@@ -391,7 +315,6 @@ export class ExamsService {
         const exam = await this.assertExamExists(id);
         this.assertExamNotFinalized(exam);
         this.assertExamNotDiscarded(exam);
-        await this.assertIsCreatorOrAdmin(exam, requestingUser);
 
         if (dto.termId !== undefined) {
             await this.assertTermBelongsToYear(dto.termId, exam.academicYearId);
@@ -408,15 +331,10 @@ export class ExamsService {
         });
     }
 
-    public async addSubject(
-        id: string,
-        dto: AddExamSubjectDto,
-        requestingUser: JwtPayload,
-    ): Promise<ExamBasic> {
+    public async addSubject(id: string, dto: AddExamSubjectDto): Promise<ExamBasic> {
         const exam = await this.assertExamExists(id);
         this.assertExamNotFinalized(exam);
         this.assertExamNotDiscarded(exam);
-        await this.assertIsCreatorOrAdmin(exam, requestingUser);
 
         if (exam.examSubjects.some((examSubject) => examSubject.subjectId === dto.subjectId)) {
             throw new BadRequestException(ERROR_EXAM_SUBJECT_ALREADY_EXISTS);
@@ -440,7 +358,6 @@ export class ExamsService {
         id: string,
         subjectId: string,
         dto: UpdateExamSubjectDto,
-        requestingUser: JwtPayload,
     ): Promise<ExamBasic> {
         if (dto.totalMarks === undefined && dto.date === undefined) {
             throw new BadRequestException(ERROR_EXAM_SUBJECT_EMPTY_UPDATE);
@@ -449,7 +366,6 @@ export class ExamsService {
         const exam = await this.assertExamExists(id);
         this.assertExamNotFinalized(exam);
         this.assertExamNotDiscarded(exam);
-        await this.assertIsCreatorOrAdmin(exam, requestingUser);
         await this.getExamSubjectOrThrow(id, subjectId);
 
         await this.prismaService.examSubject.update({
@@ -463,15 +379,10 @@ export class ExamsService {
         return this.getByIdOrThrow(id);
     }
 
-    public async removeSubject(
-        id: string,
-        subjectId: string,
-        requestingUser: JwtPayload,
-    ): Promise<ExamBasic> {
+    public async removeSubject(id: string, subjectId: string): Promise<ExamBasic> {
         const exam = await this.assertExamExists(id);
         this.assertExamNotFinalized(exam);
         this.assertExamNotDiscarded(exam);
-        await this.assertIsCreatorOrAdmin(exam, requestingUser);
         await this.getExamSubjectOrThrow(id, subjectId);
 
         if (exam.examSubjects.length <= 1) {
@@ -485,11 +396,10 @@ export class ExamsService {
         return this.getByIdOrThrow(id);
     }
 
-    public async finalize(id: string, requestingUser: JwtPayload): Promise<ExamBasic> {
+    public async finalize(id: string): Promise<ExamBasic> {
         const exam = await this.assertExamExists(id);
         this.assertExamNotDiscarded(exam);
         this.assertExamNotFinalized(exam);
-        await this.assertCanFinalize(exam, requestingUser);
 
         return this.prismaService.exam.update({
             where: { id },

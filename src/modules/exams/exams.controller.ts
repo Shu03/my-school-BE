@@ -23,8 +23,7 @@ import {
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_GRADES_WRITE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
@@ -42,24 +41,18 @@ export class ExamsController {
     public constructor(private readonly examsService: ExamsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
-    @ApiOperation({ summary: "Create a new exam" })
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: "Create a new exam (admin only)" })
     @ApiCreatedResponse({ description: "Exam created successfully" })
     @ApiBadRequestResponse({ description: "Validation failed or grade level mismatch" })
-    @ApiForbiddenResponse({ description: "Not the class teacher of this class" })
-    public async create(
-        @Body() dto: CreateExamDto,
-        @CurrentUser() user: JwtPayload,
-    ): Promise<ReturnType<ExamsService["create"]>> {
-        return this.examsService.create(dto, user);
+    public async create(@Body() dto: CreateExamDto): Promise<ReturnType<ExamsService["create"]>> {
+        return this.examsService.create(dto);
     }
 
     @Get()
     @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
     @ApiOperation({ summary: "List exams scoped by role" })
     @ApiOkResponse({ description: "Exams retrieved successfully" })
-    @ApiForbiddenResponse({ description: "Insufficient permissions" })
     public async findAll(
         @Query() dto: ListExamsDto,
         @CurrentUser() user: JwtPayload,
@@ -81,84 +74,67 @@ export class ExamsController {
     }
 
     @Patch(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
-    @ApiOperation({ summary: "Update a non-finalized exam" })
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: "Update a non-finalized exam (admin only)" })
     @ApiOkResponse({ description: "Exam updated successfully" })
     @ApiNotFoundResponse({ description: "Exam not found" })
     @ApiBadRequestResponse({ description: "Validation failed or exam finalized/discarded" })
-    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
     public async update(
         @Param("id") id: string,
         @Body() dto: UpdateExamDto,
-        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<ExamsService["update"]>> {
-        return this.examsService.update(id, dto, user);
+        return this.examsService.update(id, dto);
     }
 
     @Post(":id/subjects")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
-    @ApiOperation({ summary: "Add a subject to a non-finalized exam" })
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: "Add a subject to a non-finalized exam (admin only)" })
     @ApiCreatedResponse({ description: "Subject added successfully" })
     @ApiNotFoundResponse({ description: "Exam not found" })
     @ApiBadRequestResponse({ description: "Subject already added or grade level mismatch" })
-    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
     public async addSubject(
         @Param("id") id: string,
         @Body() dto: AddExamSubjectDto,
-        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<ExamsService["addSubject"]>> {
-        return this.examsService.addSubject(id, dto, user);
+        return this.examsService.addSubject(id, dto);
     }
 
     @Patch(":id/subjects/:subjectId")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
-    @ApiOperation({ summary: "Update an exam subject's marks or date" })
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: "Update an exam subject's marks or date (admin only)" })
     @ApiOkResponse({ description: "Exam subject updated successfully" })
     @ApiNotFoundResponse({ description: "Exam or subject not found" })
     @ApiBadRequestResponse({ description: "Validation failed or exam finalized/discarded" })
-    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
     public async updateSubject(
         @Param("id") id: string,
         @Param("subjectId") subjectId: string,
         @Body() dto: UpdateExamSubjectDto,
-        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<ExamsService["updateSubject"]>> {
-        return this.examsService.updateSubject(id, subjectId, dto, user);
+        return this.examsService.updateSubject(id, subjectId, dto);
     }
 
     @Delete(":id/subjects/:subjectId")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
-    @ApiOperation({ summary: "Remove a subject from a non-finalized exam" })
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: "Remove a subject from a non-finalized exam (admin only)" })
     @ApiOkResponse({ description: "Exam subject removed successfully" })
     @ApiNotFoundResponse({ description: "Exam or subject not found" })
     @ApiBadRequestResponse({ description: "Cannot remove the last subject or exam finalized" })
-    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
     public async removeSubject(
         @Param("id") id: string,
         @Param("subjectId") subjectId: string,
-        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<ExamsService["removeSubject"]>> {
-        return this.examsService.removeSubject(id, subjectId, user);
+        return this.examsService.removeSubject(id, subjectId);
     }
 
     @Post(":id/finalize")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
+    @Roles(Role.ADMIN)
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Finalize an exam" })
+    @ApiOperation({ summary: "Finalize an exam (admin only)" })
     @ApiOkResponse({ description: "Exam finalized successfully" })
     @ApiNotFoundResponse({ description: "Exam not found" })
     @ApiBadRequestResponse({ description: "Exam already finalized or discarded" })
-    @ApiForbiddenResponse({ description: "Not the creator of this exam" })
-    public async finalize(
-        @Param("id") id: string,
-        @CurrentUser() user: JwtPayload,
-    ): Promise<ReturnType<ExamsService["finalize"]>> {
-        return this.examsService.finalize(id, user);
+    public async finalize(@Param("id") id: string): Promise<ReturnType<ExamsService["finalize"]>> {
+        return this.examsService.finalize(id);
     }
 
     @Post(":id/unlock")

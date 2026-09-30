@@ -1,0 +1,52 @@
+model AccountDeposit {
+  id           String   @id @default(uuid())
+  amount       Decimal  @db.Decimal(12, 2)
+  depositedOn  DateTime @db.Date
+  note         String?
+  recordedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  recordedBy User? @relation("AccountDepositRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([depositedOn])
+  @@map("account_deposits")
+}
+
+model AccountWithdrawal {
+  id           String   @id @default(uuid())
+  amount       Decimal  @db.Decimal(12, 2)
+  withdrawnOn  DateTime @db.Date
+  withdrawnBy  String?
+  note         String?
+  recordedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  recordedBy User?         @relation("AccountWithdrawalRecordedBy", fields: [recordedById], references: [id])
+  bills      AccountBill[]
+
+  @@index([withdrawnOn])
+  @@map("account_withdrawals")
+}
+
+model AccountBill {
+  id           String   @id @default(uuid())
+  withdrawalId String
+  amount       Decimal  @db.Decimal(12, 2)
+  billedOn     DateTime @db.Date
+  category     String
+  vendor       String?
+  billNumber   String?
+  note         String?
+  recordedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  withdrawal AccountWithdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  recordedBy User?             @relation("AccountBillRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([withdrawalId])
+  @@index([billedOn])
+  @@map("account_bills")
+}

@@ -1,25 +1,23 @@
 import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
 
-import { EnrollmentStatus, ExamStatus, Prisma, Role } from "@prisma/client";
+import { AccessType, EnrollmentStatus, ExamStatus, Prisma, Role } from "@prisma/client";
 
 import {
     ERROR_EXAM_DISCARDED,
     ERROR_EXAM_FINALIZED,
+    ERROR_GRADE_ACCESS_DENIED,
     ERROR_GRADE_FORBIDDEN_SCOPE,
-    ERROR_GRADE_INSUFFICIENT_PERMISSIONS,
     ERROR_GRADE_MARKS_OUT_OF_RANGE,
     ERROR_GRADE_STUDENT_PROFILE_NOT_FOUND,
     ERROR_GRADE_STUDENTS_NOT_ENROLLED,
-    ERROR_GRADE_TEACHER_NOT_ASSIGNED,
     ERROR_GRADE_TEACHER_PROFILE_NOT_FOUND,
-    PERMISSION_GRADES_READ,
-    PERMISSION_GRADES_WRITE,
 } from "@common/constants";
 
 import { AcademicYearsService } from "@modules/academic-years/academic-years.service";
 import { JwtPayload } from "@modules/auth";
 import { ExamBasic, ExamsService } from "@modules/exams";
 import { PrismaService } from "@modules/prisma/prisma.service";
+import { AccessPolicyService } from "@modules/request-access";
 
 import { BulkEnterGradesDto } from "./dto/bulk-enter-grades.dto";
 import { GetStudentGradesDto } from "./dto/get-student-grades.dto";
@@ -49,6 +47,7 @@ export class GradesService {
         private readonly prismaService: PrismaService,
         private readonly examsService: ExamsService,
         private readonly academicYearsService: AcademicYearsService,
+        private readonly accessPolicy: AccessPolicyService,
     ) {}
 
     private async resolveTeacherProfileId(userId: string): Promise<string> {
@@ -77,22 +76,20 @@ export class GradesService {
         return profile.id;
     }
 
-    private async assertTeacherAssignedToExamSubject(
+    private async assertTeacherCanEnterMarks(
         userId: string,
         sectionId: string,
         subjectId: string,
     ): Promise<void> {
-        const assignment = await this.prismaService.teacherClassAssignment.findFirst({
-            where: {
-                sectionId,
-                teacher: { userId },
-                OR: [{ subjectId }, { subjectId: null }],
-            },
-            select: { id: true },
-        });
+        const source = await this.accessPolicy.resolveSubjectAccess(
+            userId,
+            AccessType.MARKS,
+            sectionId,
+            subjectId,
+        );
 
-        if (!assignment) {
-            throw new ForbiddenException(ERROR_GRADE_TEACHER_NOT_ASSIGNED);
+        if (!source) {
+            throw new ForbiddenException(ERROR_GRADE_ACCESS_DENIED);
         }
     }
 
@@ -148,16 +145,8 @@ export class GradesService {
         let gradedById: string | null = null;
 
         if (requestingUser.role === Role.TEACHER) {
-            if (!requestingUser.permissions.includes(PERMISSION_GRADES_WRITE)) {
-                throw new ForbiddenException(ERROR_GRADE_INSUFFICIENT_PERMISSIONS);
-            }
-
+            await this.assertTeacherCanEnterMarks(requestingUser.sub, exam.sectionId, subjectId);
             gradedById = await this.resolveTeacherProfileId(requestingUser.sub);
-            await this.assertTeacherAssignedToExamSubject(
-                requestingUser.sub,
-                exam.sectionId,
-                subjectId,
-            );
         }
 
         for (const record of dto.records) {
@@ -197,15 +186,19 @@ export class GradesService {
         subjectId: string,
         requestingUser: JwtPayload,
     ): Promise<void> {
-        if (!requestingUser.permissions.includes(PERMISSION_GRADES_READ)) {
-            throw new ForbiddenException(ERROR_GRADE_INSUFFICIENT_PERMISSIONS);
-        }
+        const [isAssigned, isGranted] = await Promise.all([
+            this.accessPolicy.isAssignedToSection(requestingUser.sub, exam.sectionId),
+            this.accessPolicy.hasApprovedAccess(
+                requestingUser.sub,
+                AccessType.MARKS,
+                exam.sectionId,
+                subjectId,
+            ),
+        ]);
 
-        await this.assertTeacherAssignedToExamSubject(
-            requestingUser.sub,
-            exam.sectionId,
-            subjectId,
-        );
+        if (!isAssigned && !isGranted) {
+            throw new ForbiddenException(ERROR_GRADE_FORBIDDEN_SCOPE);
+        }
     }
 
     public async getExamSubjectGrades(
@@ -304,10 +297,6 @@ export class GradesService {
                 throw new ForbiddenException(ERROR_GRADE_FORBIDDEN_SCOPE);
             }
         } else if (requestingUser.role === Role.TEACHER) {
-            if (!requestingUser.permissions.includes(PERMISSION_GRADES_READ)) {
-                throw new ForbiddenException(ERROR_GRADE_INSUFFICIENT_PERMISSIONS);
-            }
-
             const assignment = await this.prismaService.teacherClassAssignment.findFirst({
                 where: {
                     teacher: { userId: requestingUser.sub },

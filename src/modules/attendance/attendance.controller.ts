@@ -1,8 +1,19 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    Put,
+    Query,
+} from "@nestjs/common";
 import {
     ApiBadRequestResponse,
     ApiBearerAuth,
     ApiForbiddenResponse,
+    ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
@@ -10,16 +21,15 @@ import {
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_ATTENDANCE_READ, PERMISSION_ATTENDANCE_WRITE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
 import { AttendanceService } from "./attendance.service";
-import { BulkMarkAttendanceDto } from "./dto/bulk-mark-attendance.dto";
+import { AttendanceDayParamsDto } from "./dto/attendance-day-params.dto";
 import { GetAttendanceSummaryDto } from "./dto/get-attendance-summary.dto";
-import { GetAttendanceDto } from "./dto/get-attendance.dto";
 import { GetStudentAttendanceDto } from "./dto/get-student-attendance.dto";
+import { SaveAttendanceDayDto } from "./dto/save-attendance-day.dto";
 
 @ApiTags("Attendance")
 @ApiBearerAuth()
@@ -27,30 +37,47 @@ import { GetStudentAttendanceDto } from "./dto/get-student-attendance.dto";
 export class AttendanceController {
     public constructor(private readonly attendanceService: AttendanceService) {}
 
-    @Post("mark")
+    @Put("sections/:sectionId/days/:date")
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ATTENDANCE_WRITE)
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Bulk mark attendance for a class on the current day" })
-    @ApiOkResponse({ description: "Attendance marked successfully" })
-    @ApiBadRequestResponse({ description: "Validation failed or not a school day" })
-    @ApiForbiddenResponse({ description: "Teacher not assigned to this class" })
-    public async mark(
-        @Body() dto: BulkMarkAttendanceDto,
+    @ApiOperation({ summary: "Record or update attendance for a section on a day" })
+    @ApiOkResponse({ description: "Attendance saved successfully" })
+    @ApiBadRequestResponse({
+        description: "Invalid date, not a school day or student not enrolled",
+    })
+    @ApiForbiddenResponse({ description: "Only the class teacher can manage attendance" })
+    public async saveDay(
+        @Param() params: AttendanceDayParamsDto,
+        @Body() dto: SaveAttendanceDayDto,
         @CurrentUser() user: JwtPayload,
-    ): Promise<ReturnType<AttendanceService["mark"]>> {
-        return this.attendanceService.mark(dto, user.sub, user.role);
+    ): Promise<ReturnType<AttendanceService["saveDay"]>> {
+        return this.attendanceService.saveDay(params.sectionId, params.date, dto, user);
     }
 
-    @Get()
-    @Roles(Role.ADMIN)
-    @Permissions(PERMISSION_ATTENDANCE_READ)
-    @ApiOperation({ summary: "Get class attendance on a given date" })
+    @Get("sections/:sectionId/days/:date")
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @ApiOperation({ summary: "Get attendance for a section on a day" })
     @ApiOkResponse({ description: "Attendance retrieved successfully" })
-    public async getClassAttendance(
-        @Query() dto: GetAttendanceDto,
-    ): Promise<ReturnType<AttendanceService["getClassAttendance"]>> {
-        return this.attendanceService.getClassAttendance(dto);
+    @ApiForbiddenResponse({ description: "Not assigned to this section" })
+    public async getDay(
+        @Param() params: AttendanceDayParamsDto,
+        @CurrentUser() user: JwtPayload,
+    ): Promise<ReturnType<AttendanceService["getDay"]>> {
+        return this.attendanceService.getDay(params.sectionId, params.date, user);
+    }
+
+    @Delete("sections/:sectionId/days/:date")
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: "Delete attendance for a section on a day" })
+    @ApiOkResponse({ description: "Attendance deleted successfully" })
+    @ApiNotFoundResponse({ description: "Attendance has not been taken on this day" })
+    @ApiForbiddenResponse({ description: "Only the class teacher can manage attendance" })
+    public async deleteDay(
+        @Param() params: AttendanceDayParamsDto,
+        @CurrentUser() user: JwtPayload,
+    ): Promise<void> {
+        await this.attendanceService.deleteDay(params.sectionId, params.date, user);
     }
 
     @Get("student/:studentId")
@@ -67,13 +94,14 @@ export class AttendanceController {
     }
 
     @Get("summary")
-    @Roles(Role.ADMIN)
-    @Permissions(PERMISSION_ATTENDANCE_READ)
-    @ApiOperation({ summary: "Get monthly attendance summary for a class" })
+    @Roles(Role.ADMIN, Role.TEACHER)
+    @ApiOperation({ summary: "Get monthly attendance summary for a section" })
     @ApiOkResponse({ description: "Attendance summary retrieved successfully" })
+    @ApiForbiddenResponse({ description: "Not assigned to this section" })
     public async getSummary(
         @Query() dto: GetAttendanceSummaryDto,
+        @CurrentUser() user: JwtPayload,
     ): Promise<ReturnType<AttendanceService["getSummary"]>> {
-        return this.attendanceService.getSummary(dto);
+        return this.attendanceService.getSummary(dto, user);
     }
 }

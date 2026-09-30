@@ -25,7 +25,6 @@ graph TB
         subgraph Guards["Guard Chain (Global)"]
             G1[JwtAuthGuard]
             G2[RolesGuard]
-            G3[PermissionsGuard]
         end
 
         subgraph Modules["Feature Modules"]
@@ -153,16 +152,12 @@ flowchart TD
     JWT -->|Valid| STRAT[JwtStrategy<br/>Verify token type = access<br/>Check user active]
     STRAT -->|Fail| R401
     STRAT -->|Pass| ROLES{RolesGuard<br/>@Roles decorator present?}
-    ROLES -->|No decorator| PERMS
+    ROLES -->|No decorator| HANDLER
     ROLES -->|Has roles| RCHK{User role in allowed list?}
     RCHK -->|No| R403[403 Forbidden]
-    RCHK -->|Yes| PERMS{PermissionsGuard<br/>@Permissions decorator?}
-    PERMS -->|No decorator| HANDLER
-    PERMS -->|Has perms| ADMIN{Role = ADMIN?}
-    ADMIN -->|Yes| HANDLER
-    ADMIN -->|No| PCHK{User has ALL<br/>required permissions?}
-    PCHK -->|No| R403
-    PCHK -->|Yes| HANDLER
+    RCHK -->|Yes| HANDLER
+    HANDLER --> SCOPE[Service layer<br/>AccessPolicyService checks<br/>assignments + approved access]
+    SCOPE -->|Not allowed| R403
 ```
 
 ---
@@ -175,8 +170,8 @@ erDiagram
     User ||--o| StudentProfile : "has"
     User ||--o{ RefreshToken : "owns"
     User ||--o{ User : "createdBy"
+    User ||--o{ AccessRequest : "requests"
 
-    TeacherProfile }o--o| PermissionPreset : "uses"
     TeacherProfile ||--o{ TeacherClassAssignment : "assigned"
 
     StudentProfile ||--o{ StudentEnrollment : "enrolled"
@@ -208,8 +203,6 @@ erDiagram
         uuid userId FK_UK
         string employeeCode UK
         datetime joiningDate
-        uuid presetId FK
-        string[] permissionOverrides
     }
 
     StudentProfile {
@@ -228,10 +221,13 @@ erDiagram
         datetime expiresAt
     }
 
-    PermissionPreset {
+    AccessRequest {
         uuid id PK
-        string name UK
-        string[] permissions
+        uuid requesterId FK
+        AccessType type
+        AccessRequestStatus status
+        uuid sectionId FK
+        uuid subjectId FK
     }
 
     AcademicYear {
@@ -284,36 +280,27 @@ erDiagram
 
 ---
 
-## 5. Permission System
+## 5. Teacher Access
 
 ```mermaid
 flowchart LR
     subgraph Roles
         ADMIN[ADMIN<br/><i>Implicit full access</i>]
-        TEACHER[TEACHER<br/><i>Permission-based</i>]
-        STUDENT[STUDENT<br/><i>No permissions yet</i>]
+        TEACHER[TEACHER<br/><i>Assignment-based</i>]
+        STUDENT[STUDENT<br/><i>Own data only</i>]
     end
 
-    subgraph Sources["Permission Sources (Teachers)"]
-        PRESET[PermissionPreset<br/>e.g. 'Senior Teacher']
-        OVERRIDES[permissionOverrides<br/>per teacher]
+    subgraph Sources["Access Sources (Teachers)"]
+        CT[CLASS_TEACHER assignment<br/>attendance + all subjects]
+        ST[SUBJECT_TEACHER assignment<br/>section + subject]
+        AR[Approved AccessRequest<br/>HOMEWORK / MARKS for section + subject]
     end
 
-    subgraph Perms["Available Permissions"]
-        P1[ACADEMIC_YEAR_MANAGE]
-        P2[CLASS_MANAGE]
-        P3[SUBJECT_MANAGE]
-        P4[LEAVE_APPLY]
-    end
-
-    TEACHER --> PRESET
-    TEACHER --> OVERRIDES
-    PRESET --> |union| MERGE[Effective Permissions]
-    OVERRIDES --> |union| MERGE
-    MERGE --> P1 & P2 & P3 & P4
+    TEACHER --> CT & ST & AR
+    CT & ST & AR --> POLICY[AccessPolicyService]
 ```
 
-**Key rule:** Permissions are additive only. `permissionOverrides` adds to preset; to remove, change the preset itself.
+**Key rules:** no permission strings or presets. Access is checked against the database on every request, so approvals and revocations take effect immediately. Teachers request extra homework/marks access via `/request-access`; admins approve, reject, revoke or grant directly.
 
 ---
 
@@ -323,7 +310,7 @@ flowchart LR
 flowchart TD
     REQ[HTTP Request] --> CORS[CORS Middleware]
     CORS --> VP[ValidationPipe<br/>whitelist + transform]
-    VP --> GUARDS[Guard Chain<br/>JWT → Roles → Permissions]
+    VP --> GUARDS[Guard Chain<br/>JWT → Roles]
     GUARDS --> CTRL[Controller]
     CTRL --> SVC[Service Layer]
     SVC --> PRISMA[Prisma ORM]
@@ -394,46 +381,43 @@ graph LR
         AD8["PATCH /users/:id/deactivate"]
         AD9["POST /auth/admin/reset-password"]
         AD10["PATCH /academic-years/:id/set-current"]
-    end
-
-    subgraph PermBased["Role + Permission"]
-        PB1["POST /academic-years"]
-        PB2["GET /academic-years"]
-        PB3["GET /academic-years/:id"]
-        PB4["PATCH /academic-years/:id"]
-        PB5["POST /academic-years/:id/terms"]
-        PB6["POST /classes"]
-        PB7["PATCH /classes/:id"]
+        AD11["POST /academic-years"]
+        AD12["GET /academic-years"]
+        AD13["GET /academic-years/:id"]
+        AD14["PATCH /academic-years/:id"]
+        AD15["POST /academic-years/:id/terms"]
+        AD16["POST /classes"]
+        AD17["PATCH /classes/:id"]
     end
 ```
 
-| Endpoint                          | Method | Auth                        | Roles          | Permission           |
-| --------------------------------- | ------ | --------------------------- | -------------- | -------------------- |
-| `/health`                         | GET    | Public                      | —              | —                    |
-| `/auth/login`                     | POST   | Public                      | —              | —                    |
-| `/auth/refresh`                   | POST   | Public                      | —              | —                    |
-| `/auth/logout`                    | POST   | JWT                         | Any            | —                    |
-| `/auth/change-password`           | POST   | JWT (access or first_login) | Any            | —                    |
-| `/auth/admin/reset-password`      | POST   | JWT                         | ADMIN          | —                    |
-| `/users/admin`                    | POST   | JWT                         | ADMIN          | —                    |
-| `/users/teacher`                  | POST   | JWT                         | ADMIN          | —                    |
-| `/users/student`                  | POST   | JWT                         | ADMIN          | —                    |
-| `/users`                          | GET    | JWT                         | ADMIN          | —                    |
-| `/users/:id`                      | GET    | JWT                         | ADMIN          | —                    |
-| `/users/:id`                      | PATCH  | JWT                         | ADMIN          | —                    |
-| `/users/:id/activate`             | PATCH  | JWT                         | ADMIN          | —                    |
-| `/users/:id/deactivate`           | PATCH  | JWT                         | ADMIN          | —                    |
-| `/academic-years`                 | POST   | JWT                         | ADMIN, TEACHER | ACADEMIC_YEAR_MANAGE |
-| `/academic-years`                 | GET    | JWT                         | ADMIN, TEACHER | ACADEMIC_YEAR_MANAGE |
-| `/academic-years/current`         | GET    | Public                      | —              | —                    |
-| `/academic-years/:id`             | GET    | JWT                         | ADMIN, TEACHER | ACADEMIC_YEAR_MANAGE |
-| `/academic-years/:id`             | PATCH  | JWT                         | ADMIN, TEACHER | ACADEMIC_YEAR_MANAGE |
-| `/academic-years/:id/set-current` | PATCH  | JWT                         | ADMIN          | —                    |
-| `/academic-years/:id/terms`       | POST   | JWT                         | ADMIN, TEACHER | ACADEMIC_YEAR_MANAGE |
-| `/classes`                        | GET    | Public                      | —              | —                    |
-| `/classes`                        | POST   | JWT                         | ADMIN, TEACHER | CLASS_MANAGE         |
-| `/classes/:id`                    | GET    | JWT                         | Any            | —                    |
-| `/classes/:id`                    | PATCH  | JWT                         | ADMIN, TEACHER | CLASS_MANAGE         |
+| Endpoint                          | Method | Auth                        | Roles |
+| --------------------------------- | ------ | --------------------------- | ----- |
+| `/health`                         | GET    | Public                      | —     |
+| `/auth/login`                     | POST   | Public                      | —     |
+| `/auth/refresh`                   | POST   | Public                      | —     |
+| `/auth/logout`                    | POST   | JWT                         | Any   |
+| `/auth/change-password`           | POST   | JWT (access or first_login) | Any   |
+| `/auth/admin/reset-password`      | POST   | JWT                         | ADMIN |
+| `/users/admin`                    | POST   | JWT                         | ADMIN |
+| `/users/teacher`                  | POST   | JWT                         | ADMIN |
+| `/users/student`                  | POST   | JWT                         | ADMIN |
+| `/users`                          | GET    | JWT                         | ADMIN |
+| `/users/:id`                      | GET    | JWT                         | ADMIN |
+| `/users/:id`                      | PATCH  | JWT                         | ADMIN |
+| `/users/:id/activate`             | PATCH  | JWT                         | ADMIN |
+| `/users/:id/deactivate`           | PATCH  | JWT                         | ADMIN |
+| `/academic-years`                 | POST   | JWT                         | ADMIN |
+| `/academic-years`                 | GET    | JWT                         | ADMIN |
+| `/academic-years/current`         | GET    | Public                      | —     |
+| `/academic-years/:id`             | GET    | JWT                         | ADMIN |
+| `/academic-years/:id`             | PATCH  | JWT                         | ADMIN |
+| `/academic-years/:id/set-current` | PATCH  | JWT                         | ADMIN |
+| `/academic-years/:id/terms`       | POST   | JWT                         | ADMIN |
+| `/classes`                        | GET    | Public                      | —     |
+| `/classes`                        | POST   | JWT                         | ADMIN |
+| `/classes/:id`                    | GET    | JWT                         | Any   |
+| `/classes/:id`                    | PATCH  | JWT                         | ADMIN |
 
 ---
 
@@ -453,8 +437,8 @@ graph TD
     end
 
     subgraph Common["src/common/"]
-        GUARDS["guards/ — JWT, Roles, Permissions"]
-        DECORATORS["decorators/ — @Public, @Roles, @Permissions, @CurrentUser"]
+        GUARDS["guards/ — JWT, Roles"]
+        DECORATORS["decorators/ — @Public, @Roles, @CurrentUser"]
         FILTERS["filters/ — GlobalExceptionFilter"]
         INTERCEPTORS["interceptors/ — ResponseInterceptor"]
         UTILS["utils/ — password hashing, token hashing"]
@@ -473,7 +457,7 @@ graph TD
     subgraph Schema["prisma/schema/"]
         S_BASE["base.prisma — generator + datasource"]
         S_USER["user.prisma — User, RefreshToken"]
-        S_TEACHER["teacher.prisma — TeacherProfile, PermissionPreset, Assignments"]
+        S_TEACHER["teacher.prisma — TeacherProfile, Assignments"]
         S_STUDENT["student.prisma — StudentProfile, Enrollment"]
         S_ACADEMIC["academic.prisma — AcademicYear, Term, Class, Subject"]
     end
@@ -666,7 +650,6 @@ sequenceDiagram
 | User creation uniqueness | Check-then-act race condition        | Rely on DB constraint + handle P2002      |
 | Term date validation     | No overlap detection between terms   | Add overlap check in service              |
 | Tests                    | Scaffold only ("should be defined")  | Write integration + unit tests            |
-| Permissions in JWT       | Stale for 15min after change         | Document tradeoff or add version check    |
 | Unused deps              | `@nestjs/axios` installed but unused | Remove                                    |
 | .env parsing             | Custom hand-rolled parser            | Replace with `dotenv.config()`            |
 
@@ -702,14 +685,14 @@ enum EnrollmentStatus {
 
 ## 17. Security Measures
 
-| Measure                 | Implementation                                                |
-| ----------------------- | ------------------------------------------------------------- |
-| Password hashing        | bcrypt with 12 salt rounds                                    |
-| Token storage           | Only SHA-256 hash stored in DB, never raw token               |
-| Token rotation          | Every refresh invalidates previous token                      |
-| Reuse detection         | Replaying revoked token kills entire token family             |
-| Session limiting        | Max 3 active sessions per user                                |
-| Input validation        | class-validator + whitelist (strips unknown fields)           |
-| First-login enforcement | Must change temp password before accessing system             |
-| Permission isolation    | Students have no permissions; teachers get explicit grants    |
-| Deactivation            | Deactivated users rejected at strategy level on every request |
+| Measure                 | Implementation                                                            |
+| ----------------------- | ------------------------------------------------------------------------- |
+| Password hashing        | bcrypt with 12 salt rounds                                                |
+| Token storage           | Only SHA-256 hash stored in DB, never raw token                           |
+| Token rotation          | Every refresh invalidates previous token                                  |
+| Reuse detection         | Replaying revoked token kills entire token family                         |
+| Session limiting        | Max 3 active sessions per user                                            |
+| Input validation        | class-validator + whitelist (strips unknown fields)                       |
+| First-login enforcement | Must change temp password before accessing system                         |
+| Access isolation        | Teachers limited to assigned sections/subjects + approved access requests |
+| Deactivation            | Deactivated users rejected at strategy level on every request             |

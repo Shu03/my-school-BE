@@ -26,11 +26,7 @@ import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
-import { AssignPresetDto } from "./dto/assign-preset.dto";
 import { CreateAssignmentDto } from "./dto/create-assignment.dto";
-import { CreatePresetDto } from "./dto/create-preset.dto";
-import { UpdatePermissionsDto } from "./dto/update-permissions.dto";
-import { UpdatePresetDto } from "./dto/update-preset.dto";
 import { UpdateTeacherDto } from "./dto/update-teacher.dto";
 import { TeachersService } from "./teachers.service";
 
@@ -39,62 +35,6 @@ import { TeachersService } from "./teachers.service";
 @Controller("teachers")
 export class TeachersController {
     public constructor(private readonly teachersService: TeachersService) {}
-
-    // ─── Permission Presets ───────────────────────────────────────────
-
-    @Post("presets")
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: "Create a permission preset" })
-    @ApiCreatedResponse({ description: "Preset created successfully" })
-    @ApiBadRequestResponse({ description: "Validation failed or name taken" })
-    public async createPreset(
-        @Body() dto: CreatePresetDto,
-    ): Promise<ReturnType<TeachersService["createPreset"]>> {
-        return this.teachersService.createPreset(dto);
-    }
-
-    @Get("presets")
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: "List all permission presets" })
-    @ApiOkResponse({ description: "Presets retrieved successfully" })
-    public async findAllPresets(): Promise<ReturnType<TeachersService["findAllPresets"]>> {
-        return this.teachersService.findAllPresets();
-    }
-
-    @Get("presets/:presetId")
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: "Get a single permission preset" })
-    @ApiOkResponse({ description: "Preset retrieved successfully" })
-    @ApiNotFoundResponse({ description: "Preset not found" })
-    public async findOnePreset(
-        @Param("presetId") presetId: string,
-    ): Promise<ReturnType<TeachersService["findOnePreset"]>> {
-        return this.teachersService.findOnePreset(presetId);
-    }
-
-    @Patch("presets/:presetId")
-    @Roles(Role.ADMIN)
-    @ApiOperation({ summary: "Update a permission preset" })
-    @ApiOkResponse({ description: "Preset updated successfully" })
-    @ApiNotFoundResponse({ description: "Preset not found" })
-    @ApiBadRequestResponse({ description: "Validation failed" })
-    public async updatePreset(
-        @Param("presetId") presetId: string,
-        @Body() dto: UpdatePresetDto,
-    ): Promise<ReturnType<TeachersService["updatePreset"]>> {
-        return this.teachersService.updatePreset(presetId, dto);
-    }
-
-    @Delete("presets/:presetId")
-    @Roles(Role.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Delete a permission preset" })
-    @ApiOkResponse({ description: "Preset deleted successfully" })
-    @ApiNotFoundResponse({ description: "Preset not found" })
-    @ApiBadRequestResponse({ description: "Preset has assigned teachers" })
-    public async deletePreset(@Param("presetId") presetId: string): Promise<void> {
-        await this.teachersService.deletePreset(presetId);
-    }
 
     // ─── Teacher Profiles ─────────────────────────────────────────────
 
@@ -130,45 +70,6 @@ export class TeachersController {
         @Body() dto: UpdateTeacherDto,
     ): Promise<ReturnType<TeachersService["updateTeacher"]>> {
         return this.teachersService.updateTeacher(id, dto);
-    }
-
-    @Patch(":id/assign-preset")
-    @Roles(Role.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Assign a permission preset to a teacher" })
-    @ApiOkResponse({ description: "Preset assigned successfully" })
-    @ApiNotFoundResponse({ description: "Teacher or preset not found" })
-    public async assignPreset(
-        @Param("id") id: string,
-        @Body() dto: AssignPresetDto,
-    ): Promise<ReturnType<TeachersService["assignPreset"]>> {
-        return this.teachersService.assignPreset(id, dto);
-    }
-
-    @Patch(":id/remove-preset")
-    @Roles(Role.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Remove preset from teacher" })
-    @ApiOkResponse({ description: "Preset removed successfully" })
-    @ApiNotFoundResponse({ description: "Teacher not found" })
-    @ApiBadRequestResponse({ description: "No preset assigned" })
-    public async removePreset(
-        @Param("id") id: string,
-    ): Promise<ReturnType<TeachersService["removePreset"]>> {
-        return this.teachersService.removePreset(id);
-    }
-
-    @Patch(":id/permissions")
-    @Roles(Role.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: "Update teacher permission overrides" })
-    @ApiOkResponse({ description: "Permissions updated successfully" })
-    @ApiNotFoundResponse({ description: "Teacher not found" })
-    public async updatePermissions(
-        @Param("id") id: string,
-        @Body() dto: UpdatePermissionsDto,
-    ): Promise<ReturnType<TeachersService["updatePermissions"]>> {
-        return this.teachersService.updatePermissions(id, dto);
     }
 
     // ─── Teacher Class Assignments ────────────────────────────────────

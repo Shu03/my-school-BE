@@ -15,8 +15,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_ANNOUNCEMENTS_MANAGE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
@@ -32,8 +31,7 @@ export class AnnouncementsController {
     public constructor(private readonly announcementsService: AnnouncementsService) {}
 
     @Post()
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ANNOUNCEMENTS_MANAGE)
+    @Roles(Role.ADMIN)
     public create(
         @Body() dto: CreateAnnouncementDto,
         @CurrentUser() user: JwtPayload,
@@ -58,8 +56,7 @@ export class AnnouncementsController {
     }
 
     @Patch(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ANNOUNCEMENTS_MANAGE)
+    @Roles(Role.ADMIN)
     public update(
         @Param("id", ParseUUIDPipe) id: string,
         @Body() dto: UpdateAnnouncementDto,
@@ -69,8 +66,7 @@ export class AnnouncementsController {
     }
 
     @Delete(":id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_ANNOUNCEMENTS_MANAGE)
+    @Roles(Role.ADMIN)
     @HttpCode(HttpStatus.OK)
     public delete(
         @Param("id", ParseUUIDPipe) id: string,

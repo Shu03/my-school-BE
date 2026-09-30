@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 
+import { AccessRequestStatus } from "@prisma/client";
+
+import { ERROR_SUBJECT_HAS_ACTIVE_ACCESS } from "@common/constants";
+
 import { PrismaService } from "@modules/prisma/prisma.service";
 
 import { CreateSubjectDto } from "./dto/create-subject.dto";
@@ -165,6 +169,16 @@ export class SubjectsService {
         if (assignmentCount > 0) {
             throw new BadRequestException(
                 `Cannot delete subject — it has ${assignmentCount} active teacher assignment(s). Remove all assignments first.`,
+            );
+        }
+
+        const activeAccessCount = await this.prisma.accessRequest.count({
+            where: { subjectId: id, status: AccessRequestStatus.APPROVED },
+        });
+
+        if (activeAccessCount > 0) {
+            throw new BadRequestException(
+                ERROR_SUBJECT_HAS_ACTIVE_ACCESS.replace("%s", String(activeAccessCount)),
             );
         }
 

@@ -14,8 +14,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_FEES_MANAGE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
@@ -36,8 +35,7 @@ export class FeesController {
     public constructor(private readonly feesService: FeesService) {}
 
     @Post("structures")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_FEES_MANAGE)
+    @Roles(Role.ADMIN)
     public createFeeStructure(
         @Body() dto: CreateFeeStructureDto,
     ): ReturnType<FeesService["createFeeStructure"]> {
@@ -45,8 +43,7 @@ export class FeesController {
     }
 
     @Get("structures")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_FEES_MANAGE)
+    @Roles(Role.ADMIN)
     public listFeeStructures(
         @Query() dto: ListFeeStructuresDto,
     ): ReturnType<FeesService["listFeeStructures"]> {
@@ -54,8 +51,7 @@ export class FeesController {
     }
 
     @Patch("structures/:id")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_FEES_MANAGE)
+    @Roles(Role.ADMIN)
     public updateFeeStructure(
         @Param("id", ParseUUIDPipe) id: string,
         @Body() dto: UpdateFeeStructureDto,
@@ -64,15 +60,14 @@ export class FeesController {
     }
 
     @Post("backfill")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_FEES_MANAGE)
+    @Roles(Role.ADMIN)
     @HttpCode(HttpStatus.OK)
     public backfill(@Body() dto: BackfillFeesDto): ReturnType<FeesService["backfill"]> {
         return this.feesService.backfill(dto);
     }
 
     @Get("records")
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.STUDENT)
     public findAllRecords(
         @Query() dto: ListFeeRecordsDto,
         @CurrentUser() user: JwtPayload,
@@ -81,7 +76,7 @@ export class FeesController {
     }
 
     @Get("records/:id")
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.STUDENT)
     public findOneRecord(
         @Param("id", ParseUUIDPipe) id: string,
         @CurrentUser() user: JwtPayload,
@@ -90,8 +85,7 @@ export class FeesController {
     }
 
     @Post("records/:id/payments")
-    @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_FEES_MANAGE)
+    @Roles(Role.ADMIN)
     public recordPayment(
         @Param("id", ParseUUIDPipe) id: string,
         @Body() dto: RecordPaymentDto,
@@ -101,7 +95,7 @@ export class FeesController {
     }
 
     @Get("records/:id/payments")
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.STUDENT)
     public listPayments(
         @Param("id", ParseUUIDPipe) id: string,
         @CurrentUser() user: JwtPayload,
@@ -110,7 +104,7 @@ export class FeesController {
     }
 
     @Get("student/:studentId")
-    @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+    @Roles(Role.ADMIN, Role.STUDENT)
     public getStudentFeeHistory(
         @Param("studentId", ParseUUIDPipe) studentId: string,
         @CurrentUser() user: JwtPayload,

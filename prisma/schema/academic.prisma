@@ -49,10 +49,12 @@ model Section {
   // Relations
   academicYear       AcademicYear             @relation(fields: [academicYearId], references: [id])
   attendances        Attendance[]
+  attendanceDays     AttendanceDay[]
   enrollments        StudentEnrollment[]
   exams              Exam[]
   teacherAssignments TeacherClassAssignment[]
   homework           Homework[]
+  accessRequests     AccessRequest[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -73,6 +75,7 @@ model Subject {
   examSubjects       ExamSubject[]
   teacherAssignments TeacherClassAssignment[]
   homework           Homework[]
+  accessRequests     AccessRequest[]
 
   @@unique([name, classLevel])
   @@unique([code, classLevel])

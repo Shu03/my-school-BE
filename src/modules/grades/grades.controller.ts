@@ -3,8 +3,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Role } from "@prisma/client";
 
-import { PERMISSION_GRADES_READ, PERMISSION_GRADES_WRITE } from "@common/constants";
-import { CurrentUser, Permissions, Roles } from "@common/decorators";
+import { CurrentUser, Roles } from "@common/decorators";
 
 import { JwtPayload } from "@modules/auth";
 
@@ -20,7 +19,6 @@ export class GradesController {
 
     @Post("exams/:examId/subjects/:subjectId/grades")
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_WRITE)
     public enterGrades(
         @Param("examId", ParseUUIDPipe) examId: string,
         @Param("subjectId", ParseUUIDPipe) subjectId: string,
@@ -42,7 +40,6 @@ export class GradesController {
 
     @Get("exams/:examId/subjects/:subjectId/grades/summary")
     @Roles(Role.ADMIN, Role.TEACHER)
-    @Permissions(PERMISSION_GRADES_READ)
     public getExamSubjectSummary(
         @Param("examId", ParseUUIDPipe) examId: string,
         @Param("subjectId", ParseUUIDPipe) subjectId: string,

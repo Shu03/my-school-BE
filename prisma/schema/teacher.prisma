@@ -1,29 +1,13 @@
-model PermissionPreset {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  permissions String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  teachers TeacherProfile[]
-
-  @@map("permission_presets")
-}
-
 model TeacherProfile {
-  id                  String    @id @default(uuid())
-  userId              String    @unique
-  employeeCode        String    @unique
-  joiningDate         DateTime?
-  presetId            String?
-  permissionOverrides String[]
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  employeeCode String    @unique
+  joiningDate  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relations
   user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  preset           PermissionPreset?        @relation(fields: [presetId], references: [id])
   attendances      Attendance[]
   classAssignments TeacherClassAssignment[]
   examsCreated     Exam[]                   @relation("ExamCreatedBy")
